@@ -76,7 +76,6 @@ def download_file(url, to, checksum):
 
         chunk_size = 8192
         with tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
-
             try:
                 # Support resuming
                 if os.path.exists(to):
@@ -103,15 +102,6 @@ def download_file(url, to, checksum):
 
 def download(fname, checksum, sources, extract=False):
     if os.path.exists(fname + '.done'): return
-    if os.path.exists(fname):
-        try:
-            print(fname, 'already exists, verifying checksum')
-            sha256sum(fname, expected=checksum)
-            touch(fname + '.done')
-            return
-        except AssertionError:
-            print('{} exists but doesn\'t match checksum!'.format(fname))
-            rm_if_exists(fname)
             
     print('Finding source for', fname)
 
@@ -124,6 +114,16 @@ def download(fname, checksum, sources, extract=False):
             if source.type == 'direct':
                 download_file(source.url, fname, checksum)
             elif source.type == 'gdrive':
+                if os.path.exists(fname):
+                    try:
+                        print(fname, 'already exists.')
+                        sha256sum(fname, expected=checksum)
+                        touch(fname + '.done')
+                        return
+                    except AssertionError:
+                        print('{} exists but doesn\'t match checksum!'.format(fname))
+                        rm_if_exists(fname)
+
                 gdown.download(source.url, fname, quiet=False)
                 sha256sum(fname, expected=checksum)
             elif source.type == 'gcloud':
@@ -206,6 +206,7 @@ def sha256sum(filename, expected=None):
     b  = bytearray(128*1024)
     mv = memoryview(b)
     progress = tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
+    print(f"Verifying checksum for {filename}")
     with open(filename, 'rb', buffering=0) as f:
         for n in iter(lambda : f.readinto(mv), 0):
             h.update(mv[:n])
