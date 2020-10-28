@@ -163,7 +163,7 @@ class GutenbergDataset(Dataset):
         done_file = os.path.join(download_directory, "download.done")
         if not os.path.exists(done_file):
             os.makedirs(download_directory, exist_ok=True)
-            sh("gsutil -m rsync gs://deepmind-gutenberg/train ./pg19_train")
+            sh(f"gsutil -m rsync gs://deepmind-gutenberg/train {download_directory}")
 
             with open(done_file, "w") as fh:
                 fh.write("done!")
