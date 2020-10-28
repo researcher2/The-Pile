@@ -6,3 +6,4 @@ pytablewriter
 gitpython
 fasttext
 gsutil
+rehash

@@ -64,7 +64,7 @@ def download_file(url, to, checksum):
 
     max_retries = 3
     fail_count = 0
-    download_checkpoint = to + "ckpnt"
+    download_checkpoint = to + ".ckpnt"
     while True:
         resume_point = 0
         temp_checksum = rehash.sha256()
