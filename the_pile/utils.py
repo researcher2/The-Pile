@@ -11,7 +11,7 @@ import gdown
 import tarfile
 import requests
 import shutil
-from tqdm import tqdm
+import tqdm
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -75,11 +75,11 @@ def download_file(url, to, checksum):
                     fail_count += 1
 
         chunk_size = 8192
-        with tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
+        with tqdm.tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
             try:
                 # Support resuming
                 if os.path.exists(to):
-                    print("File already exists, resuming download.")
+                    tqdm.write("File already exists, resuming download.")
                     start_byte = os.path.getsize(to)
                     headers = {}
                     headers["Range"] = f"bytes={start_byte}-"
@@ -94,7 +94,7 @@ def download_file(url, to, checksum):
                         progress.update(len(chunk))
                         f.write(chunk)
             except Exception as ex:
-                print(f"Download error: {ex}")
+                tqdm.write(f"Download error: {ex}")
                 fail_count += 1
             
         if fail_count == max_retries:
@@ -207,8 +207,8 @@ def sha256sum(filename, expected=None):
     h  = hashlib.sha256()
     b  = bytearray(128*1024)
     mv = memoryview(b)
-    progress = tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
-    print(f"Verifying checksum for {filename}")
+    progress = tqdm.tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
+    tqdm.write(f"Verifying checksum for {filename}")
     with open(filename, 'rb', buffering=0) as f:
         for n in iter(lambda : f.readinto(mv), 0):
             h.update(mv[:n])
