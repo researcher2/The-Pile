@@ -63,8 +63,7 @@ class WikipediaDataset(Dataset):
         rm_if_exists('components/wikipedia_en')
     
     def size(self):
-        self._download()
-        return sum(os.path.getsize(f) for f in ls('components/wikipedia_en/output'))
+        return 6847462907
     
     def num_docs(self):
         return 6033151
@@ -177,8 +176,7 @@ class GutenbergDataset(Dataset):
         rm_if_exists('components/gutenberg')
     
     def size(self):
-        self._download()
-        return sum(os.path.getsize(f) for f in ls('components/gutenberg/pg19_train'))
+        return 11678184672
     
     def num_docs(self):
         return 28602
