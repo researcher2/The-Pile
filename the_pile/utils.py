@@ -57,17 +57,6 @@ session.mount("http://", adapter)
 
 Source = collections.namedtuple('Source', ['type', 'url'])
 
-h = hashlib.sha256()
-b = bytearray(128*1024)
-mv = memoryview(b)
-progress = tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
-tqdm.write(f"Verifying checksum for {filename}")
-with open(filename, 'rb', buffering=0) as f:
-    for n in iter(lambda : f.readinto(mv), 0):
-        h.update(mv[:n])
-        progress.update(n)
-progress.close()
-
 def download_file(url, to, checksum):
     print('Downloading {}'.format(url))
     expected_size = get_url_content_length(url)
