@@ -113,6 +113,8 @@ def download_file(url, to, checksum):
 
                 with session.get(url, headers=headers, stream=True) as r, \
                      open(to, 'ab') as f:
+
+                    f.seek(resume_point)
                     r.raise_for_status()
                     for chunk in r.iter_content(chunk_size):
                         f.write(chunk)
