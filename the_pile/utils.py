@@ -72,7 +72,7 @@ def download_file(url, to, checksum):
     previous_signal_int = signal.signal(SIGINT, handler)
 
     try:
-        print('Downloading {}'.format(url))
+        tqdm.write('Downloading {}'.format(url))
         expected_size = get_url_content_length(url)
 
         max_retries = 3
@@ -99,7 +99,7 @@ def download_file(url, to, checksum):
                 else:
                     # No size info or full size
                     if temp_checksum.hexdigest() == checksum:
-                        print('CHECKSUM OK', to)
+                        tqdm.write('CHECKSUM OK', to)
                         return
                     else:
                         fail_count += 1
@@ -142,7 +142,7 @@ def download_file(url, to, checksum):
                 raise Exception("Download failed")
     finally:
         if terminate:
-            print('SIGINT or CTRL-C detected, stopping.')
+            tqdm.write('SIGINT or CTRL-C detected, stopping.')
 
         signal.signal(SIGINT, previous_signal_int)
 
