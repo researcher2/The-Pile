@@ -59,7 +59,6 @@ Source = collections.namedtuple('Source', ['type', 'url'])
 def download_file(url, to, checksum):
     print('Downloading {}'.format(url))
     expected_size = get_url_content_length(url)
-    print(f"Expected File Size: {expected_size}")
 
     max_retries = 3
     fail_count = 0
