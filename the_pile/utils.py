@@ -79,6 +79,7 @@ def download_file(url, to, checksum):
             try:
                 # Support resuming
                 if os.path.exists(to):
+                    print("File already exists, resuming download.")
                     start_byte = os.path.getsize(to)
                     headers = {}
                     headers["Range"] = f"bytes={start_byte}-"
