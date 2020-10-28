@@ -14,6 +14,7 @@ import shutil
 from tqdm import tqdm
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+import pickle
 
 def touch(x):
     Path(x).touch()
@@ -56,17 +57,41 @@ session.mount("http://", adapter)
 
 Source = collections.namedtuple('Source', ['type', 'url'])
 
+h = hashlib.sha256()
+b = bytearray(128*1024)
+mv = memoryview(b)
+progress = tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
+tqdm.write(f"Verifying checksum for {filename}")
+with open(filename, 'rb', buffering=0) as f:
+    for n in iter(lambda : f.readinto(mv), 0):
+        h.update(mv[:n])
+        progress.update(n)
+progress.close()
+
 def download_file(url, to, checksum):
     print('Downloading {}'.format(url))
     expected_size = get_url_content_length(url)
 
     max_retries = 3
     fail_count = 0
+    download_checkpoint = to + "ckpnt"
     while True:
+        resume_point = 0
+        temp_checksum = hashlib.sha256()
         if os.path.exists(to):
             if expected_size and os.path.getsize(to) != expected_size:
+                # Will resume below
                 fail_count += 1
+                if os.path.exists(download_checkpoint):
+                    resume_point, temp_checksum = pickle.load(open(download_checkpoint, "rb"))
+                else:
+                    resume_point = os.path.getsize(to)
+                    temp_checksum = hashlib.sha256()
+                    with open(to, "rb") as f:
+                        for byte_block in iter(lambda: f.read(4096),b""):
+                            temp_checksum.update(byte_block)
             else:
+                # Full size (just missing .done file, edge case)
                 print("Verifying sha256sum...")
                 try:
                     sha256sum(to, expected=checksum)
@@ -74,16 +99,15 @@ def download_file(url, to, checksum):
                 except:
                     fail_count += 1
 
-        chunk_size = 8192
+        chunk_size = 1024*1024
         with tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
             try:
                 # Support resuming
                 if os.path.exists(to):
                     tqdm.write("File already exists, resuming download.")
-                    start_byte = os.path.getsize(to)
                     headers = {}
-                    headers["Range"] = f"bytes={start_byte}-"
-                    progress.update(start_byte)
+                    headers["Range"] = f"bytes={resume_point}-"
+                    progress.update(resume_point)
                 else:
                     headers=None
 
@@ -91,16 +115,21 @@ def download_file(url, to, checksum):
                      open(to, 'ab') as f:
                     r.raise_for_status()
                     for chunk in r.iter_content(chunk_size):
-                        progress.update(len(chunk))
                         f.write(chunk)
+
+                        chunk_length = len(chunk)                        
+                        resume_point += chunk_length
+                        temp_checksum.update(chunk)                        
+                        pickle.dump((resume_point, temp_checksum), open(download_checkpoint,"wb"))
+
+                        progress.update(chunk_length)
+
             except Exception as ex:
                 tqdm.write(f"Download error: {ex}")
                 fail_count += 1
             
         if fail_count == max_retries:
-            return False
-
-    return True
+            raise Exception("Download failed")
 
 def download(fname, checksum, sources, extract=False):
     if os.path.exists(fname + '.done'): return
@@ -142,7 +171,7 @@ def download(fname, checksum, sources, extract=False):
             import traceback
             traceback.print_exc()
             print('Download method [{}] {} failed, trying next option'.format(source.type, source.url))
-            rm_if_exists(fname)
+            # rm_if_exists(fname)
             continue
 
         break
@@ -201,7 +230,6 @@ def sha256str(s):
     h = hashlib.sha256()
     h.update(s)
     return h.hexdigest()
-
 
 def sha256sum(filename, expected=None):
     h  = hashlib.sha256()
