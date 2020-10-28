@@ -15,6 +15,7 @@ from tqdm import tqdm
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import pickle
+import rehash
 
 def touch(x):
     Path(x).touch()
@@ -66,7 +67,7 @@ def download_file(url, to, checksum):
     download_checkpoint = to + "ckpnt"
     while True:
         resume_point = 0
-        temp_checksum = hashlib.sha256()
+        temp_checksum = rehash.sha256()
         if os.path.exists(to):
             if expected_size and os.path.getsize(to) != expected_size:
                 # Will resume below
@@ -75,7 +76,7 @@ def download_file(url, to, checksum):
                     resume_point, temp_checksum = pickle.load(open(download_checkpoint, "rb"))
                 else:
                     resume_point = os.path.getsize(to)
-                    temp_checksum = hashlib.sha256()
+                    temp_checksum = rehash.sha256()
                     with open(to, "rb") as f:
                         for byte_block in iter(lambda: f.read(4096),b""):
                             temp_checksum.update(byte_block)
