@@ -69,24 +69,23 @@ def download_file(url, to, checksum):
         resume_point = 0
         temp_checksum = rehash.sha256()
         if os.path.exists(to):
-            if expected_size and os.path.getsize(to) != expected_size:
-                # Will resume below
-                fail_count += 1
-                if os.path.exists(download_checkpoint):
-                    resume_point, temp_checksum = pickle.load(open(download_checkpoint, "rb"))
-                else:
-                    resume_point = os.path.getsize(to)
-                    temp_checksum = rehash.sha256()
-                    with open(to, "rb") as f:
-                        for byte_block in iter(lambda: f.read(4096),b""):
-                            temp_checksum.update(byte_block)
+            # Load checkpoint if available
+            if os.path.exists(download_checkpoint):                
+                resume_point, temp_checksum = pickle.load(open(download_checkpoint, "rb"))
             else:
-                # Full size (just missing .done file)
-                print("Verifying sha256sum...")
-                try:
-                    sha256sum(to, expected=checksum)
+                resume_point = os.path.getsize(to)
+                temp_checksum = rehash.sha256()
+                with open(to, "rb") as f:
+                    for byte_block in iter(lambda: f.read(4096),b""):
+                        temp_checksum.update(byte_block)
+
+            if expected_size and os.path.getsize(to) != expected_size:
+                pass # Will resume below
+            else:
+                # No size info or full size
+                if temp_checksum.hexdigest() == checksum:
                     return
-                except:
+                else:
                     fail_count += 1
 
         chunk_size = 1024*1024
