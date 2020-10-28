@@ -16,6 +16,10 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import pickle
 import rehash
+from signal import SIGINT
+import signal
+import sys
+
 
 def touch(x):
     Path(x).touch()
@@ -58,70 +62,89 @@ session.mount("http://", adapter)
 
 Source = collections.namedtuple('Source', ['type', 'url'])
 
+terminate = False
+def handler(signal_received, frame):
+    global terminate
+    terminate = True
+
 def download_file(url, to, checksum):
-    print('Downloading {}'.format(url))
-    expected_size = get_url_content_length(url)
+    # Handle SIGINT nicely
+    previous_signal_int = signal.signal(SIGINT, handler)
 
-    max_retries = 3
-    fail_count = 0
-    download_checkpoint = to + ".ckpnt"
-    while True:
-        resume_point = 0
-        temp_checksum = rehash.sha256()
-        if os.path.exists(to):
-            # Load checkpoint if available
-            if os.path.exists(download_checkpoint):                
-                resume_point, temp_checksum = pickle.load(open(download_checkpoint, "rb"))
-            else:
-                resume_point = os.path.getsize(to)
-                temp_checksum = rehash.sha256()
-                with open(to, "rb") as f:
-                    for byte_block in iter(lambda: f.read(4096),b""):
-                        temp_checksum.update(byte_block)
+    try:
+        print('Downloading {}'.format(url))
+        expected_size = get_url_content_length(url)
 
-            if expected_size and os.path.getsize(to) != expected_size:
-                pass # Will resume below
-            else:
-                # No size info or full size
-                if temp_checksum.hexdigest() == checksum:
-                    print('CHECKSUM OK', to)
-                    return
+        max_retries = 3
+        fail_count = 0
+        download_checkpoint = to + ".ckpnt"
+        while True:
+            resume_point = 0
+            temp_checksum = rehash.sha256()
+            if os.path.exists(to):
+                # Load checkpoint if available
+                if os.path.exists(download_checkpoint):                
+                    resume_point, temp_checksum = pickle.load(open(download_checkpoint, "rb"))
                 else:
+                    resume_point = os.path.getsize(to)
+                    temp_checksum = rehash.sha256()
+                    with open(to, "rb") as f:
+                        for byte_block in iter(lambda: f.read(4096),b""):
+                            if terminate:
+                                sys.exit(0)
+                            temp_checksum.update(byte_block)
+
+                if expected_size and os.path.getsize(to) != expected_size:
+                    pass # Will resume below
+                else:
+                    # No size info or full size
+                    if temp_checksum.hexdigest() == checksum:
+                        print('CHECKSUM OK', to)
+                        return
+                    else:
+                        fail_count += 1
+
+            chunk_size = 1024*1024
+            with tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
+                try:
+                    # Support resuming
+                    if os.path.exists(to):
+                        tqdm.write("File already exists, resuming download.")
+                        headers = {}
+                        headers["Range"] = f"bytes={resume_point}-"
+                        progress.update(resume_point)
+                    else:
+                        headers=None
+
+                    with session.get(url, headers=headers, stream=True) as r, \
+                         open(to, 'ab') as f:
+
+                        f.seek(resume_point)
+                        r.raise_for_status()
+                        for chunk in r.iter_content(chunk_size):
+                            if terminate:
+                                sys.exit(0)
+                            
+                            f.write(chunk)
+
+                            chunk_length = len(chunk)                        
+                            resume_point += chunk_length
+                            temp_checksum.update(chunk)                        
+                            pickle.dump((resume_point, temp_checksum), open(download_checkpoint,"wb"))
+
+                            progress.update(chunk_length)
+
+                except Exception as ex:
+                    tqdm.write(f"Download error: {ex}")
                     fail_count += 1
+                
+            if fail_count == max_retries:
+                raise Exception("Download failed")
+    finally:
+        if terminate:
+            print('SIGINT or CTRL-C detected, stopping.')
 
-        chunk_size = 1024*1024
-        with tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
-            try:
-                # Support resuming
-                if os.path.exists(to):
-                    tqdm.write("File already exists, resuming download.")
-                    headers = {}
-                    headers["Range"] = f"bytes={resume_point}-"
-                    progress.update(resume_point)
-                else:
-                    headers=None
-
-                with session.get(url, headers=headers, stream=True) as r, \
-                     open(to, 'ab') as f:
-
-                    f.seek(resume_point)
-                    r.raise_for_status()
-                    for chunk in r.iter_content(chunk_size):
-                        f.write(chunk)
-
-                        chunk_length = len(chunk)                        
-                        resume_point += chunk_length
-                        temp_checksum.update(chunk)                        
-                        pickle.dump((resume_point, temp_checksum), open(download_checkpoint,"wb"))
-
-                        progress.update(chunk_length)
-
-            except Exception as ex:
-                tqdm.write(f"Download error: {ex}")
-                fail_count += 1
-            
-        if fail_count == max_retries:
-            raise Exception("Download failed")
+        signal.signal(SIGINT, previous_signal_int)
 
 def download(fname, checksum, sources, extract=False):
     if os.path.exists(fname + '.done'): return
