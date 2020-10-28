@@ -12,26 +12,95 @@ import tarfile
 import requests
 import shutil
 from tqdm import tqdm
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 def touch(x):
     Path(x).touch()
 
-def download_file(url, to):
-    # modified from https://stackoverflow.com/a/37573701
-    print('Downloading {}'.format(url))
+def get_url_content_length(url):
+    response = requests.head(url)
+    response.raise_for_status()
 
-    response = requests.get(url, stream=True)
-    size = int(response.headers.get('content-length', 0))
-    block_size = 1024*1024
-    pbar = tqdm(total=size, unit='iB', unit_scale=True)
-    with open(to, 'wb') as fout:
-        for data in response.iter_content(block_size):
-            pbar.update(len(data))
-            fout.write(data)
-    pbar.close()
-    assert not (size != 0 and pbar.n != size)
+    if "Content-Length" in response.headers:
+        return int(response.headers['Content-length'])
+    else:
+        return None
+
+# Support 3 retries and backoff
+retry_strategy = Retry(
+    total=3,
+    backoff_factor=1,
+    status_forcelist=[429, 500, 502, 503, 504],
+    method_whitelist=["HEAD", "GET", "OPTIONS"]
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+session = requests.Session()
+session.mount("https://", adapter)
+session.mount("http://", adapter)
+
+# def download_file(url, to):
+#     # modified from https://stackoverflow.com/a/37573701
+#     print('Downloading {}'.format(url))
+
+#     response = session.get(url, stream=True)
+#     size = int(response.headers.get('content-length', 0))
+#     block_size = 1024*1024
+#     pbar = tqdm(total=size, unit='iB', unit_scale=True)
+#     with open(to, 'wb') as fout:
+#         for data in response.iter_content(block_size):
+#             pbar.update(len(data))
+#             fout.write(data)
+#     pbar.close()
+#     assert not (size != 0 and pbar.n != size)
 
 Source = collections.namedtuple('Source', ['type', 'url'])
+
+def download_file(url, to, checksum):
+    print('Downloading {}'.format(url))
+    expected_size = get_url_content_length(url)
+    print(f"Expected File Size: {expected_size}")
+
+    max_retries = 3
+    fail_count = 0
+    while True:
+        if os.path.exists(to):
+            if expected_size and os.path.getsize(to) != expected_size:
+                fail_count += 1
+            else:
+                print("Verifying sha256sum...")
+                try:
+                    sha256sum(to, expected=checksum)
+                    return
+                except:
+                    fail_count += 1
+
+        chunk_size = 8192
+        with tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
+
+            try:
+                # Support resuming
+                if os.path.exists(to):
+                    start_byte = os.path.getsize(to)
+                    headers = {}
+                    headers["Range"] = f"bytes={start_byte}-"
+                else:
+                    headers=None
+
+                with session.get(url, headers=headers, stream=True) as r, \
+                     open(to, 'wb') as f:
+                    r.raise_for_status()
+                    for chunk in r.iter_content(chunk_size):
+                        progress.update(len(chunk))
+                        f.write(chunk)
+            except Exception as ex:
+                print(f"Download error: {ex}")
+                fail_count += 1
+            
+        if fail_count == max_retries:
+            return False
+
+    return True
 
 def download(fname, checksum, sources, extract=False):
     if os.path.exists(fname + '.done'): return
@@ -54,13 +123,12 @@ def download(fname, checksum, sources, extract=False):
         try:
             # todo: implement torrent handling
             if source.type == 'direct':
-                download_file(source.url, fname)
+                download_file(source.url, fname, checksum)
             elif source.type == 'gdrive':
                 gdown.download(source.url, fname, quiet=False)
+                sha256sum(fname, expected=checksum)
             elif source.type == 'gcloud':
-                raise NotImplementedError('gcloud download not implemented!')
-            
-            sha256sum(fname, expected=checksum)
+                raise NotImplementedError('gcloud download not implemented!')   
 
             if extract:
                 tar_xf(fname)
@@ -138,9 +206,12 @@ def sha256sum(filename, expected=None):
     h  = hashlib.sha256()
     b  = bytearray(128*1024)
     mv = memoryview(b)
+    progress = tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
     with open(filename, 'rb', buffering=0) as f:
         for n in iter(lambda : f.readinto(mv), 0):
             h.update(mv[:n])
+            progress.update(n)
+    progress.close()
     
     if expected:
         assert h.hexdigest() == expected
