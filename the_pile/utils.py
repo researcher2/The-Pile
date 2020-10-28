@@ -81,7 +81,7 @@ def download_file(url, to, checksum):
                         for byte_block in iter(lambda: f.read(4096),b""):
                             temp_checksum.update(byte_block)
             else:
-                # Full size (just missing .done file, edge case)
+                # Full size (just missing .done file)
                 print("Verifying sha256sum...")
                 try:
                     sha256sum(to, expected=checksum)
