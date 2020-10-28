@@ -1,4 +1,4 @@
-from the_pile.datasets import WikipediaDataset, GutenbergDataset
+from the_pile.datasets import WikipediaDataset, GutenbergDataset, PubMedCentralDataset
 
 def main():
     wiki = WikipediaDataset()
@@ -6,6 +6,9 @@ def main():
 
     gutenberg = GutenbergDataset()
     print("Gutenberg Size: ", gutenberg.size())
+
+    pubmed = PubMedCentralDataset()
+    pubmed._download()
 
 if __name__ == '__main__':
     main()
