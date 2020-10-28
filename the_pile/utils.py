@@ -180,6 +180,8 @@ def download(fname, checksum, sources, extract=False):
                 rm_if_exists(fname)
             touch(fname + '.done')
             return
+        except SystemExit:
+            raise
         except KeyboardInterrupt:
             raise
         except:
