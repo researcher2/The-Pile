@@ -88,7 +88,7 @@ def download_file(url, to, checksum):
                     headers=None
 
                 with session.get(url, headers=headers, stream=True) as r, \
-                     open(to, 'wb') as f:
+                     open(to, 'ab') as f:
                     r.raise_for_status()
                     for chunk in r.iter_content(chunk_size):
                         progress.update(len(chunk))
