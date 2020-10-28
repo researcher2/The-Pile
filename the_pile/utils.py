@@ -84,6 +84,7 @@ def download_file(url, to, checksum):
             else:
                 # No size info or full size
                 if temp_checksum.hexdigest() == checksum:
+                    print('CHECKSUM OK', to)
                     return
                 else:
                     fail_count += 1
