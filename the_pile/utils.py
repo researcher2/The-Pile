@@ -82,6 +82,7 @@ def download_file(url, to, checksum):
                     start_byte = os.path.getsize(to)
                     headers = {}
                     headers["Range"] = f"bytes={start_byte}-"
+                    tqdm.update(start_byte)
                 else:
                     headers=None
 
