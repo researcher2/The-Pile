@@ -11,7 +11,7 @@ import gdown
 import tarfile
 import requests
 import shutil
-import tqdm
+from tqdm import tqdm
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -75,7 +75,7 @@ def download_file(url, to, checksum):
                     fail_count += 1
 
         chunk_size = 8192
-        with tqdm.tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
+        with tqdm(total=expected_size, unit="byte", unit_scale=1) as progress:
             try:
                 # Support resuming
                 if os.path.exists(to):
@@ -207,7 +207,7 @@ def sha256sum(filename, expected=None):
     h  = hashlib.sha256()
     b  = bytearray(128*1024)
     mv = memoryview(b)
-    progress = tqdm.tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
+    progress = tqdm(total=os.path.getsize(filename), unit="byte", unit_scale=1)
     tqdm.write(f"Verifying checksum for {filename}")
     with open(filename, 'rb', buffering=0) as f:
         for n in iter(lambda : f.readinto(mv), 0):
