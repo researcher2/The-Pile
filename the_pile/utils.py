@@ -83,9 +83,9 @@ def download_file(url, to, checksum):
             temp_checksum = rehash.sha256()
             if os.path.exists(to):
                 # Load checkpoint if available
-                if os.path.exists(download_checkpoint):                
+                try:
                     resume_point, temp_checksum = pickle.load(open(download_checkpoint, "rb"))
-                else:
+                except:
                     resume_point = os.path.getsize(to)
                     temp_checksum = rehash.sha256()
                     with open(to, "rb") as f:
@@ -124,7 +124,7 @@ def download_file(url, to, checksum):
                         for chunk in r.iter_content(chunk_size):
                             if terminate:
                                 sys.exit(0)
-                            
+
                             f.write(chunk)
 
                             chunk_length = len(chunk)                        
