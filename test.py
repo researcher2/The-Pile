@@ -5,7 +5,7 @@ class ExitCodeError(Exception): pass
 def sh(x):
     if os.system(x): raise ExitCodeError()
 
-def main(self):
+def main():
     download_directory = "components/gutenberg/pg19_train"
     done_file = os.path.join(download_directory, "download.done")
     if not os.path.exists(done_file):
