@@ -47,7 +47,7 @@ def process_batch(pool, batch, n_value, db_session):
         assert(len(result) < 2)
 
         if result:
-            result[0].n_gram_row.count += 1
+            result[0].count += 1
         else:
             new_ngram = NGram()
             new_ngram.n_gram = n_gram
