@@ -1,6 +1,7 @@
 import os
 import argparse
 import pickle
+import math
 
 import tqdm
 import nltk
@@ -19,7 +20,7 @@ def extract_ngrams(data, num, tqdm_func, global_tqdm):
     n_grams = ngrams(nltk.word_tokenize(data), num)
     return [ ' '.join(grams) for grams in n_grams]
 
-def process_batch(pool, batch, n_value):
+def process_batch(pool, batch, n_value, n_grams):
     tasks = []
     for document in batch:
         task = (extract_ngrams, (document, n_value))
@@ -29,7 +30,6 @@ def process_batch(pool, batch, n_value):
     on_error = lambda _ : None
     documents = pool.map(None, tasks, on_error, on_done)
 
-    ngrams = {}
     for document_ngrams in documents:
         for n_gram in document_ngrams:
             if n_gram in ngrams:
@@ -37,43 +37,66 @@ def process_batch(pool, batch, n_value):
             else:
                 ngrams[n_gram] = 0
 
-    res = {key: val for key, val in sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True)} 
-    for n_gram, count in res.items():
-        logger.info(f"{count}: {n_gram}")
 
+gigabyte = 1000 * 1000 * 1000
 
-def main(working_directory, process_count, n_value):
+def trim_ngram_dict(n_grams):
+    logger.info("Split finished, trimming dict.")
+    sorted_dict = {key: val for key, val in sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True)}     
+    trimmed_dict = {}
+    for i, n_gram, count in enumerate(sorted_dict.items()):
+        if i == 1000:
+            break
+        trimmed_dict[n_gram] = count
+
+    return trimmed_dict
+
+def main(working_directory, process_count, n_value, approx_ram_gb):
     nltk.download('punkt')
 
     cc_dataset = CommonCrawlDataset()
+    maximum_memory = approx_ram_gb * gigabyte
+    split_size = maximum_memory / n_value
+    total_size = cc_dataset.size()
+    split_count = math.ceil(total_size / split_size)
+    documents_per_batch = cc_dataset.num_docs() / split_count
 
     batch_size = 1000
     batch = []
     pool = TqdmMultiProcessPool(process_count)
-
+    count = 0
+    n_grams = {}
     with tqdm.tqdm(total=cc_dataset.num_docs(), dynamic_ncols=True, unit="docs") as progress:
         for document, meta in cc_dataset.documents():
 
             batch.append(document)
 
             if len(batch) == batch_size:
-                process_batch(pool, batch, n_value)
+                process_batch(pool, batch, n_value, n_grams)
                 batch = []
                 progress.update(batch_size)
-                break
+                count += batch_size
+
+                if count >= documents_per_batch:
+                    n_grams = trim_ngram_dict(n_grams)
+
 
         if len(batch) != 0:
-            process_batch(pool, batch, n_value)
+            process_batch(pool, batch, n_value, n_grams)
             progress.update(len(batch))
+
+    pickle_file = os.path.join(working_directory, "ngrams.pkl")
+    pickle.dump(n_grams, open(pickle_file, "wb"))
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
 parser.add_argument("-procs", "--process_count", type=int, default=4)
 parser.add_argument("-n", "--n_value", type=int, default=13)
+parser.add_argument("-ram", "--approx_ram_gb", type=int, default=80)
 
 if __name__ == '__main__':
     logfile_path = "ngrams.log"
     setup_logger_tqdm(logfile_path)
 
     args = parser.parse_args()
-    main(args.working_directory, args.process_count, args.n_value)
+    main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb)
