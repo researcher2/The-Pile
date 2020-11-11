@@ -14,12 +14,14 @@ import logging
 from the_pile.logger import setup_logger_tqdm
 logger = logging.getLogger(__name__)
 
+from .models import get_db_session, NGram
+
 # Multiprocessing
 def extract_ngrams(data, num, tqdm_func, global_tqdm):
     n_grams = ngrams(nltk.word_tokenize(data), num)
     return [ ' '.join(grams) for grams in n_grams]
 
-def process_batch(pool, batch, n_value):
+def process_batch(pool, batch, n_value, db_session):
     tasks = []
     for document in batch:
         task = (extract_ngrams, (document, n_value))
@@ -29,23 +31,30 @@ def process_batch(pool, batch, n_value):
     on_error = lambda _ : None
     documents = pool.map(None, tasks, on_error, on_done)
 
-    ngrams = {}
-    for document_ngrams in documents:
+    for document_ngrams in tqdm.tqdm(documents):
+
+        query = db_session.query(NGram) \
+                          .filter(NGram.n_gram.in_(document_ngrams))
+
+        existing_ngrams = set()
+        for n_gram_row in query.all():        
+            existing_ngrams.add(n_gram_row.n_gram)
+            n_gram_row.count += 1
+
         for n_gram in document_ngrams:
-            if n_gram in ngrams:
-                ngrams[n_gram] += 1
-            else:
-                ngrams[n_gram] = 0
+            if n_gram not in existing_ngrams:
+                new_ngram = NGram()
+                new_ngram.n_gram = n_gram
+                new_ngram.count = 1
+                db_session.add(new_ngram)
 
-    res = {key: val for key, val in sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True)} 
-    for n_gram, count in res:
-        logger.info(f"{count}: {n_gram}")
-
+    db_session.commit()
 
 def main(working_directory, process_count, n_value):
     nltk.download('punkt')
 
     cc_dataset = CommonCrawlDataset()
+    db_session = get_db_session()
 
     batch_size = 1000
     batch = []
@@ -57,13 +66,12 @@ def main(working_directory, process_count, n_value):
             batch.append(document)
 
             if len(batch) == batch_size:
-                process_batch(pool, batch, n_value)
+                process_batch(pool, batch, n_value, db_session)
                 batch = []
                 progress.update(batch_size)
-                break
 
         if len(batch) != 0:
-            process_batch(pool, batch, n_value)
+            process_batch(pool, batch, n_value, db_session)
             progress.update(len(batch))
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
