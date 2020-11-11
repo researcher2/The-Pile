@@ -32,10 +32,10 @@ def process_batch(pool, batch, n_value, n_grams):
 
     for document_ngrams in documents:
         for n_gram in document_ngrams:
-            if n_gram in ngrams:
-                ngrams[n_gram] += 1
+            if n_gram in n_grams:
+                n_grams[n_gram] += 1
             else:
-                ngrams[n_gram] = 0
+                n_grams[n_gram] = 0
 
 
 gigabyte = 1000 * 1000 * 1000
