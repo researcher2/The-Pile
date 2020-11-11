@@ -31,17 +31,23 @@ def process_batch(pool, batch, n_value, db_session):
     on_error = lambda _ : None
     document_ngrams = pool.map(None, tasks, on_error, on_done)
 
-    query = db_session.query(NGram) \
-                      .filter(NGram.n_gram.in_(document_ngrams))
+    # query = db_session.query(NGram)
+    #                   .filter(NGram.n_gram.in_(document_ngrams))
 
 
-    existing_ngrams = set()
-    for n_gram_row in query.all():        
-        existing_ngrams.add(n_gram_row.n_gram)
-        n_gram_row.count += 1
+    # existing_ngrams = set()
+    # for n_gram_row in query.all():        
+    #     existing_ngrams.add(n_gram_row.n_gram)
+    #     n_gram_row.count += 1
 
     for document_ngram in document_ngrams:
-        if document_ngram not in existing_ngrams:
+        result = db_session.query(NGram).filter(NGram.n_gram == document_ngram).all()
+
+        assert(len(result < 2))
+
+        if result:
+            result[0].n_gram_row.count += 1
+        else:
             new_ngram = NGram()
             new_ngram.n_gram = document_ngram
             new_ngram.count = 1
