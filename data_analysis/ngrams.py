@@ -40,8 +40,8 @@ def process_batch(pool, batch, n_value, db_session):
     #     existing_ngrams.add(n_gram_row.n_gram)
     #     n_gram_row.count += 1
 
-    for document_ngrams in documents:
-        for n_gram in document_ngrams:
+    for document_ngrams in tqdm.tqdm(documents):
+        for n_gram in tqdm.tqdm(document_ngrams):
             result = db_session.query(NGram).filter(NGram.n_gram == n_gram).all()
 
         assert(len(result) < 2)
