@@ -38,7 +38,7 @@ def process_batch(pool, batch, n_value):
                 ngrams[n_gram] = 0
 
     res = {key: val for key, val in sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True)} 
-    for n_gram, count in res:
+    for n_gram, count in res.items():
         logger.info(f"{count}: {n_gram}")
 
 
