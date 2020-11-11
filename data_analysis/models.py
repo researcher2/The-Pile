@@ -17,7 +17,7 @@ base = declarative_base()
 class NGram(base):
     __tablename__ = "n_gram"
     id = Column(Integer, primary_key=True) # Auto-increment should be default
-    n_gram = Column(String(13), Index=True)
+    n_gram = Column(String(13), index=True)
     count = Column(Integer)
 
 # Index('idx_url_created', RedditSubmission.url, RedditSubmission.created_utc)
@@ -29,15 +29,11 @@ def get_db_session():
 
     fresh_db = False
     db_file_path = db_url.replace("sqlite:///","")
-    print(db_file_path)
     if not os.path.exists(db_file_path):
         fresh_db = True
 
-    print(fresh_db)
-
     engine = create_engine(db_url)
     if fresh_db:
-        print("fresh db")
         base.metadata.create_all(engine)
  
     Session = sessionmaker(bind=engine)
