@@ -42,7 +42,7 @@ def process_batch(pool, batch, n_value, db_session):
             n_gram_row.count += 1
 
         for n_gram in document_ngrams:
-            if n_gram not in extract_ngrams:
+            if n_gram not in existing_ngrams:
                 new_ngram = NGram()
                 new_ngram.n_gram = n_gram
                 new_ngram.count = 1
