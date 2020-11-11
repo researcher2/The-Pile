@@ -44,7 +44,7 @@ def process_batch(pool, batch, n_value, db_session):
         for n_gram in document_ngrams:
             result = db_session.query(NGram).filter(NGram.n_gram == n_gram).all()
 
-        assert(len(result < 2))
+        assert(len(result) < 2)
 
         if result:
             result[0].n_gram_row.count += 1
