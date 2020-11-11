@@ -58,7 +58,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb):
     maximum_memory = approx_ram_gb * gigabyte
     total_size = cc_dataset.size()
     total_ngrams_size_worst = total_size * n_value
-    split_count = math.ceil(maximum_memory / total_ngrams_size_worst)
+    split_count = math.ceil(total_ngrams_size_worst / maximum_memory)
     documents_per_batch = cc_dataset.num_docs() / split_count
 
     logger.info(f"Allocated RAM: {maximum_memory:,} bytes")
