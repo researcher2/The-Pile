@@ -29,8 +29,11 @@ def get_db_session():
 
     fresh_db = False
     db_file_path = db_url.replace("sqlite:///","")
+    print(db_file_path)
     if not os.path.exists(db_file_path):
         fresh_db = True
+
+    print(fresh_db)
 
     engine = create_engine(db_url)
     if fresh_db:
