@@ -29,7 +29,7 @@ def process_batch(pool, batch, n_value, db_session):
 
     on_done = lambda _ : None
     on_error = lambda _ : None
-    document_ngrams = pool.map(None, tasks, on_error, on_done)
+    documents = pool.map(None, tasks, on_error, on_done)
 
     # query = db_session.query(NGram)
     #                   .filter(NGram.n_gram.in_(document_ngrams))
@@ -40,8 +40,9 @@ def process_batch(pool, batch, n_value, db_session):
     #     existing_ngrams.add(n_gram_row.n_gram)
     #     n_gram_row.count += 1
 
-    for document_ngram in document_ngrams:
-        result = db_session.query(NGram).filter(NGram.n_gram == document_ngram).all()
+    for document_ngrams in documents:
+        for n_gram in document_ngrams:
+            result = db_session.query(NGram).filter(NGram.n_gram == n_gram).all()
 
         assert(len(result < 2))
 
@@ -49,7 +50,7 @@ def process_batch(pool, batch, n_value, db_session):
             result[0].n_gram_row.count += 1
         else:
             new_ngram = NGram()
-            new_ngram.n_gram = document_ngram
+            new_ngram.n_gram = n_gram
             new_ngram.count = 1
             db_session.add(new_ngram)
 
