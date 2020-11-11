@@ -56,10 +56,16 @@ def main(working_directory, process_count, n_value, approx_ram_gb):
 
     cc_dataset = CommonCrawlDataset()
     maximum_memory = approx_ram_gb * gigabyte
-    split_size = maximum_memory / n_value
     total_size = cc_dataset.size()
-    split_count = math.ceil(total_size / split_size)
+    total_ngrams_size_worst = total_size * n_value
+    split_count = math.ceil(maximum_memory / total_ngrams_size_worst)
     documents_per_batch = cc_dataset.num_docs() / split_count
+
+    logger.info(f"Allocated RAM: {maximum_memory:,} bytes")
+    logger.info(f"Total CC Size: {total_size:,} bytes")
+    logger.info(f"Worst Case Ngrams Size: {total_ngrams_size_worst:,} bytes")
+    logger.info(f"Split Count: {split_count}")
+    logger.info(f"Documents per batch: {documents_per_batch}")
 
     batch_size = 1000
     batch = []
