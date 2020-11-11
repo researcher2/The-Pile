@@ -79,7 +79,7 @@ parser.add_argument("-procs", "--process_count", type=int, default=4)
 parser.add_argument("-n", "--n_value", type=int, default=13)
 
 if __name__ == '__main__':
-    logfile_path = "generate_minhashes.log"
+    logfile_path = "ngrams.log"
     setup_logger_tqdm(logfile_path)
 
     args = parser.parse_args()
