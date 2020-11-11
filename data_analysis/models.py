@@ -34,6 +34,7 @@ def get_db_session():
 
     engine = create_engine(db_url)
     if fresh_db:
+        print("fresh db")
         base.metadata.create_all(engine)
  
     Session = sessionmaker(bind=engine)
