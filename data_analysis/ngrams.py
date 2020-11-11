@@ -42,7 +42,7 @@ gigabyte = 1000 * 1000 * 1000
 
 def trim_ngram_dict(n_grams):
     logger.info("Split finished, trimming dict.")
-    sorted_dict = {key: val for key, val in sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True)}     
+    sorted_dict = {key: val for key, val in sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)}     
     trimmed_dict = {}
     for i, n_gram, count in enumerate(sorted_dict.items()):
         if i == 1000:
