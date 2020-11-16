@@ -92,7 +92,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
                 if count >= documents_per_batch:
                     n_grams = trim_ngram_dict(n_grams)
                     # dump_ngram_dict(working_directory, n_grams, dump_batch_number)
-                    n_grams = {}
+                    # n_grams = {}
                     count = 0
                     dump_batch_number += 1
 
