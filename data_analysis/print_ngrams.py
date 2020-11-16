@@ -1,6 +1,7 @@
 import argparse
 import pickle
 import os
+import csv
 
 import logging
 from the_pile.logger import setup_logger_tqdm
@@ -14,12 +15,22 @@ def main(working_directory):
 
     ngrams = pickle.load(open(ngrams_pickle_path, "rb"))
 
-    for i, (ngram, count) in enumerate(ngrams.items()):
-        if i == 10:
-            break
+    # for i, (ngram, count) in enumerate(ngrams.items()):
+    #     if i == 10:
+    #         break
 
-        logger.info(f"{ngram} : {count}")
+    #     logger.info(f"{ngram} : {count}")
 
+
+    csv_path = os.path.join(working_directory, "ngrams.csv")
+    with open(csv_path, 'w', newline='') as csvfile:
+        fieldnames = ['ngram', 'count']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for ngram, count in ngrams.items():
+            writer.writerow({'ngram': ngram, 'count': count})
+            
 if __name__ == '__main__':
     setup_logger_tqdm()
 
