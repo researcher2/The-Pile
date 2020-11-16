@@ -62,7 +62,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
 
     maximum_memory = approx_ram_gb * gigabyte
     total_size = dataset.size()
-    total_ngrams_size_worst = total_size * n_value
+    total_ngrams_size_worst = total_size * n_value * 3
     split_count = math.ceil(total_ngrams_size_worst / maximum_memory)
     documents_per_batch = dataset.num_docs() / split_count
 
