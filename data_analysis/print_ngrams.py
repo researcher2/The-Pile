@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
 
 def main(working_directory):
-    ngrams_pickle_path = os.join(working_directory, "ngrams.pkl")
+    ngrams_pickle_path = os.path.join(working_directory, "ngrams.pkl")
 
     ngrams = pickle.load(open(ngrams_pickle_path, "rb"))
 
