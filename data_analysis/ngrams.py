@@ -91,7 +91,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
 
                 if count >= documents_per_batch:
                     # n_grams = trim_ngram_dict(n_grams)
-                    dump_ngram_dict(n_grams, dump_batch_number)
+                    dump_ngram_dict(working_directory, n_grams, dump_batch_number)
                     n_grams = {}
                     count = 0
                     dump_batch_number += 1
@@ -99,7 +99,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
 
         if len(batch) != 0:
             process_batch(pool, batch, n_value, n_grams)
-            dump_ngram_dict(n_grams, dump_batch_number)
+            dump_ngram_dict(working_directory, n_grams, dump_batch_number)
             progress.update(len(batch))
 
     # pickle_file = os.path.join(working_directory, "ngrams.pkl")
