@@ -42,10 +42,9 @@ def process_batch(pool, batch, n_value, n_grams):
 gigabyte = 1000 * 1000 * 1000
 
 def trim_ngram_dict(n_grams):
-    logger.info("Split finished, trimming dict.")
-    sorted_dict = {key: val for key, val in sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)}     
+    logger.info("Trimming dict.")
     trimmed_dict = {}
-    for i, (n_gram, count) in enumerate(sorted_dict.items()):
+    for i, (n_gram, count) in sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True):
         if i == 100000:
             break
         trimmed_dict[n_gram] = count
@@ -62,8 +61,9 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
 
     maximum_memory = approx_ram_gb * gigabyte
     total_size = dataset.size()
-    total_ngrams_size_worst = total_size * n_value * 4
-    split_count = math.ceil(total_ngrams_size_worst / maximum_memory)
+    total_ngrams_size_worst = total_size * n_value
+    memory_usage = total_ngrams_size_worst * 4 * 2 # x4 for dict x2 for sorted
+    split_count = math.ceil(memory_usage / maximum_memory)
     documents_per_batch = dataset.num_docs() / split_count
 
     logger.info(f"Allocated RAM: {maximum_memory:,} bytes")
