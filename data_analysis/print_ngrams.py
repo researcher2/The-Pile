@@ -28,9 +28,12 @@ def main(working_directory):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
-        for ngram, count in ngrams.items():
+        for i, (ngram, count) in enumerate(ngrams.items()):
+            if i == 1000:
+                break
+                
             writer.writerow({'ngram': ngram, 'count': count})
-            
+
 if __name__ == '__main__':
     setup_logger_tqdm()
 
