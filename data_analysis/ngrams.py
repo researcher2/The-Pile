@@ -44,7 +44,7 @@ gigabyte = 1000 * 1000 * 1000
 def trim_ngram_dict(n_grams):
     logger.info("Trimming dict.")
     trimmed_dict = {}
-    for i, (n_gram, count) in sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True):
+    for i, (n_gram, count) in enumerate(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)):
         if i == 100000:
             break
         trimmed_dict[n_gram] = count
