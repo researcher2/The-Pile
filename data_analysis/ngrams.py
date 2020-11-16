@@ -46,7 +46,7 @@ def trim_ngram_dict(n_grams):
     sorted_dict = {key: val for key, val in sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)}     
     trimmed_dict = {}
     for i, (n_gram, count) in enumerate(sorted_dict.items()):
-        if i == 1000:
+        if i == 100000:
             break
         trimmed_dict[n_gram] = count
 
@@ -90,8 +90,8 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
                 count += batch_size
 
                 if count >= documents_per_batch:
-                    # n_grams = trim_ngram_dict(n_grams)
-                    dump_ngram_dict(working_directory, n_grams, dump_batch_number)
+                    n_grams = trim_ngram_dict(n_grams)
+                    # dump_ngram_dict(working_directory, n_grams, dump_batch_number)
                     n_grams = {}
                     count = 0
                     dump_batch_number += 1
@@ -99,11 +99,12 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
 
         if len(batch) != 0:
             process_batch(pool, batch, n_value, n_grams)
-            dump_ngram_dict(working_directory, n_grams, dump_batch_number)
+            n_grams = trim_ngram_dict(n_grams)
+            # dump_ngram_dict(working_directory, n_grams, dump_batch_number)
             progress.update(len(batch))
 
-    # pickle_file = os.path.join(working_directory, "ngrams.pkl")
-    # pickle.dump(n_grams, open(pickle_file, "wb"))
+    pickle_file = os.path.join(working_directory, "ngrams.pkl")
+    pickle.dump(n_grams, open(pickle_file, "wb"))
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
