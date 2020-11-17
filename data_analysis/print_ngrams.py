@@ -51,4 +51,4 @@ if __name__ == '__main__':
     setup_logger_tqdm()
 
     args = parser.parse_args()
-    main(args.working_directory, args.datset_name)
+    main(args.working_directory, args.dataset_name)
