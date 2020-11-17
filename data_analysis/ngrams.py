@@ -56,8 +56,17 @@ def dump_ngram_dict(working_directory, n_grams, dump_batch_number):
     pickle.dump(n_grams, open(ngrams_pickle_file, "wb"))
 
 
-def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
+def main(working_directory, process_count, n_value, approx_ram_gb, dataset_name):
     nltk.download('punkt')
+
+    if dataset_name == "cc":
+        logger.info("Dataset: Common Crawl")
+        dataset = CommonCrawlDataset()
+    elif dataset_name == "owt2":
+        dataset = OpenWebText2Dataset()
+    else:
+        logger.info("Invalid dataset")
+        sys.exit(-1)
 
     maximum_memory = approx_ram_gb * gigabyte
     total_size = dataset.size()
@@ -104,12 +113,12 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
             # dump_ngram_dict(working_directory, n_grams, dump_batch_number)
             progress.update(len(batch))
 
-    pickle_file = os.path.join(working_directory, "ngrams.pkl")
+    pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
     pickle.dump(n_grams, open(pickle_file, "wb"))
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
-parser.add_argument("-dataset", "--dataset", default="cc")
+parser.add_argument("-dataset", "--dataset_name", default="cc")
 parser.add_argument("-procs", "--process_count", type=int, default=4)
 parser.add_argument("-n", "--n_value", type=int, default=13)
 parser.add_argument("-ram", "--approx_ram_gb", type=int, default=80)
@@ -120,13 +129,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.dataset == "cc":
-        logger.info("Dataset: Common Crawl")
-        dataset = CommonCrawlDataset()
-    elif args.dataset == "owt2":
-        dataset = OpenWebText2Dataset()
-    else:
-        logger.info("Invalid dataset")
-        sys.exit(-1)
-
-    main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, dataset)
+    main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, args.dataset_name)
