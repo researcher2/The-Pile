@@ -32,7 +32,7 @@ def main(working_directory, dataset_name):
 
     # trimmed_ngrams = trim_ngram_dict(ngrams)
 
-    csv_path = os.path.join(working_directory, "ngrams.csv")
+    csv_path = os.path.join(working_directory, f"ngrams_{dataset_name}.csv")
     with open(csv_path, 'w', newline='') as csvfile:
         fieldnames = ['ngram', 'count']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
