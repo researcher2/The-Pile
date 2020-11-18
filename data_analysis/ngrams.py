@@ -55,7 +55,7 @@ def dump_ngram_dict(working_directory, n_grams, dump_batch_number):
     ngrams_pickle_file = os.path.join(working_directory, f"ngrams_{dump_batch_number}.pkl")
     pickle.dump(n_grams, open(ngrams_pickle_file, "wb"))
 
-def dump_ngram_csv(working_directory, n_grams):
+def dump_ngram_csv(working_directory, n_grams, dataset_name):
     csv_path = os.path.join(working_directory, f"ngrams_{dataset_name}.csv")
     with open(csv_path, 'w', newline='') as csvfile:
         fieldnames = ['ngram', 'count']
@@ -121,7 +121,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
     pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
     pickle.dump(n_grams, open(pickle_file, "wb"))
 
-    dump_ngram_csv(working_directory, n_grams)
+    dump_ngram_csv(working_directory, n_grams, dataset_name)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
