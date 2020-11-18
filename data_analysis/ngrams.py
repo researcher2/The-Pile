@@ -171,8 +171,7 @@ if __name__ == '__main__':
             dataset.clean()
     else:
         if args.dataset_name not in dataset_lookup:
-            logger.info("Dataset not found in datsets, valid datasets:")            
-            logger.info(dataset_names)
+            logger.info("Dataset not found in datsets, valid datasets:")
 
         dataset = dataset_lookup[args.dataset_name]
         main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, )
