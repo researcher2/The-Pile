@@ -163,17 +163,17 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.dataset == "all":
+    if args.dataset_name == "all":
         for dataset in datasets:
             main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, dataset)
             dataset.clean()
     else:
-        if args.dataset not in datasets:
+        if args.dataset_name not in datasets:
             logger.info("Dataset not found in datsets, valid datasets:")
             dataset_names = map(lambda x : x.name(), datasets)
             logger.info(dataset_names)
 
-        dataset = datasets[args.dataset]
+        dataset = datasets[args.dataset_name]
         main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, )
         dataset.clean()
 
