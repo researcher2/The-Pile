@@ -3,6 +3,7 @@ import argparse
 import pickle
 import math
 import sys
+import csv
 
 import tqdm
 import nltk
@@ -10,7 +11,7 @@ from nltk.util import ngrams
 from nltk.probability import FreqDist
 from tqdm_multiprocess import TqdmMultiProcessPool
 
-from the_pile.datasets import CommonCrawlDataset, OpenWebText2Dataset
+from the_pile.datasets import *
 
 import logging
 from the_pile.logger import setup_logger_tqdm
@@ -55,18 +56,23 @@ def dump_ngram_dict(working_directory, n_grams, dump_batch_number):
     ngrams_pickle_file = os.path.join(working_directory, f"ngrams_{dump_batch_number}.pkl")
     pickle.dump(n_grams, open(ngrams_pickle_file, "wb"))
 
+def dump_ngram_csv(working_directory, n_grams):
+    csv_path = os.path.join(working_directory, f"ngrams_{dataset_name}.csv")
+    with open(csv_path, 'w', newline='') as csvfile:
+        fieldnames = ['ngram', 'count']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-def main(working_directory, process_count, n_value, approx_ram_gb, dataset_name):
+        writer.writeheader()
+        for i, (ngram, count) in enumerate(n_grams.items()):
+            if i == 1000:
+                break
+            writer.writerow({'ngram': ngram, 'count': count})
+
+def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
     nltk.download('punkt')
 
-    if dataset_name == "cc":
-        logger.info("Dataset: Common Crawl")
-        dataset = CommonCrawlDataset()
-    elif dataset_name == "owt2":
-        dataset = OpenWebText2Dataset()
-    else:
-        logger.info("Invalid dataset")
-        sys.exit(-1)
+    dataset_name = dataset.name().lower()
+    logger.info(f"Dataset: {dataset_name}")
 
     maximum_memory = approx_ram_gb * gigabyte
     total_size = dataset.size()
@@ -116,12 +122,40 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset_name)
     pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
     pickle.dump(n_grams, open(pickle_file, "wb"))
 
+    dump_ngram_csv(working_directory, n_grams)
+
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
-parser.add_argument("-dataset", "--dataset_name", default="cc")
+parser.add_argument("-dataset", "--dataset_name", default="CommonCrawlDataset")
 parser.add_argument("-procs", "--process_count", type=int, default=4)
 parser.add_argument("-n", "--n_value", type=int, default=13)
 parser.add_argument("-ram", "--approx_ram_gb", type=int, default=80)
+
+datasets = [
+    PubMedCentralDataset(),
+    ArXivDataset(),
+    FreeLawDataset(),
+    USPTODataset(),
+    PubMedDataset(),
+    PhilPapersDataset(),
+    ExPorterDataset(),
+    # CommonCrawlDataset(),
+    # OpenWebText2Dataset(),
+    StackExchangeDataset(),
+    WikipediaDataset(),
+    BibliotikDataset(),
+    GutenbergDataset(),
+    LiteroticaDataset(),
+    BookCorpusDataset(),
+    GithubDataset(),
+    UbuntuIRCDataset(),
+    HackerNewsDataset(),
+    EuroParlDataset(),
+    YTSubtitlesDataset(),
+    OpensubtitlesDataset(),
+    DMMathDataset(),
+    EnronEmailsDataset(),
+]
 
 if __name__ == '__main__':
     logfile_path = "ngrams.log"
@@ -129,4 +163,17 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, args.dataset_name)
+    if args.dataset == "all":
+        for dataset in datasets:
+            main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, dataset)
+            dataset.clean()
+    else:
+        if args.dataset not in datasets:
+            logger.info("Dataset not found in datsets, valid datasets:")
+            dataset_names = map(lambda x : x.name(), datasets)
+            logger.info(dataset_names)
+
+        dataset = datasets[args.dataset]
+        main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, )
+        dataset.clean()
+
