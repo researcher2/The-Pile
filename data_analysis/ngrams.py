@@ -170,7 +170,7 @@ if __name__ == '__main__':
     else:
         if args.dataset_name not in datasets:
             logger.info("Dataset not found in datsets, valid datasets:")
-            dataset_names = map(lambda x : x.name(), datasets)
+            dataset_names = list(map(lambda x : x.name(), datasets))
             logger.info(dataset_names)
 
         dataset = datasets[args.dataset_name]
