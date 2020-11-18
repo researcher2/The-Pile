@@ -81,7 +81,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
     documents_per_batch = dataset.num_docs() / split_count
 
     logger.info(f"Allocated RAM: {maximum_memory:,} bytes")
-    logger.info(f"Total CC Size: {total_size:,} bytes")
+    logger.info(f"Total Dataset Size: {total_size:,} bytes")
     logger.info(f"Worst Case Ngrams Size: {total_ngrams_size_worst:,} bytes")
     logger.info(f"Approxmiate Max Memory Usage: {memory_usage}")
     logger.info(f"Split Count: {split_count}")
