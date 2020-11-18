@@ -5,7 +5,6 @@ import math
 import sys
 import csv
 
-import tqdm
 import nltk
 from nltk.util import ngrams
 from nltk.probability import FreqDist
@@ -94,7 +93,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
     count = 0
     n_grams = {}
     dump_batch_number = 0
-    with tqdm.tqdm(total=dataset.num_docs(), dynamic_ncols=True, unit="docs") as progress:
+    with tqdm(total=dataset.num_docs(), dynamic_ncols=True, unit="docs") as progress:
         for document, meta in dataset.documents():
 
             batch.append(document)
