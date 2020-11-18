@@ -157,6 +157,8 @@ datasets = [
     EnronEmailsDataset(),
 ]
 
+dataset_lookup = {x.name() : x for x in datasets}
+
 if __name__ == '__main__':
     logfile_path = "ngrams.log"
     setup_logger_tqdm(logfile_path)
@@ -164,16 +166,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.dataset_name == "all":
-        for dataset in datasets:
+        for dataset_name, dataset in dataset_lookup.items:
             main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, dataset)
             dataset.clean()
     else:
-        if args.dataset_name not in datasets:
-            logger.info("Dataset not found in datsets, valid datasets:")
-            dataset_names = list(map(lambda x : x.name(), datasets))
+        if args.dataset_name not in dataset_lookup:
+            logger.info("Dataset not found in datsets, valid datasets:")            
             logger.info(dataset_names)
 
-        dataset = datasets[args.dataset_name]
+        dataset = dataset_lookup[args.dataset_name]
         main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, )
         dataset.clean()
 
