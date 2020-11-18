@@ -166,7 +166,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.dataset_name == "all":
-        for dataset_name, dataset in dataset_lookup.items:
+        for dataset_name, dataset in dataset_lookup.items():
             main(args.working_directory, args.process_count, args.n_value, args.approx_ram_gb, dataset)
             dataset.clean()
     else:
