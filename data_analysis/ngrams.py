@@ -120,8 +120,8 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
             merge_ngrams(n_grams_master, batch_ngrams)
             progress.update(len(batch))
 
-    pickle.dump(n_grams, open(pickle_file, "wb"))
-    dump_ngram_csv(working_directory, n_grams, dataset_name)
+    pickle.dump(n_grams_master, open(pickle_file, "wb"))
+    dump_ngram_csv(working_directory, n_grams_master, dataset_name)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
