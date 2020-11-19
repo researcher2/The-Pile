@@ -73,6 +73,11 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
     dataset_name = dataset.name().lower()
     logger.info(f"Dataset: {dataset_name}")
 
+    pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
+    if os.path.exists(pickle_file):
+        logger.info("Dataset pickle file already found, skipping")
+        return
+
     maximum_memory = approx_ram_gb * gigabyte
     total_size = dataset.size()
     total_ngrams_size_worst = total_size * n_value
@@ -118,9 +123,7 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
             # dump_ngram_dict(working_directory, n_grams, dump_batch_number)
             progress.update(len(batch))
 
-    pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
     pickle.dump(n_grams, open(pickle_file, "wb"))
-
     dump_ngram_csv(working_directory, n_grams, dataset_name)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
