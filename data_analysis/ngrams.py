@@ -131,6 +131,7 @@ parser.add_argument("-n", "--n_value", type=int, default=13)
 parser.add_argument("-ram", "--approx_ram_gb", type=int, default=80)
 
 datasets = [
+    EnronEmailsDataset(),
     PubMedCentralDataset(),
     ArXivDataset(),
     FreeLawDataset(),
@@ -152,8 +153,7 @@ datasets = [
     EuroParlDataset(),
     YTSubtitlesDataset(),
     OpensubtitlesDataset(),
-    DMMathDataset(),
-    EnronEmailsDataset(),
+    DMMathDataset() 
 ]
 
 dataset_lookup = {x.name() : x for x in datasets}
