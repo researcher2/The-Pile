@@ -36,24 +36,25 @@ def process_batch(pool, batch, n_value, n_grams):
             if n_gram in n_grams:
                 n_grams[n_gram] += 1
             else:
-                n_grams[n_gram] = 0
+                n_grams[n_gram] = 1
 
 
 gigabyte = 1000 * 1000 * 1000
 
-def trim_ngram_dict(n_grams):
-    logger.info("Trimming dict.")
-    trimmed_dict = {}
+def merge_ngrams(n_grams_master, n_grams):
+    logger.info("Merging top 100,000 ngrams in batch.")
     for i, (n_gram, count) in enumerate(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)):
         if i == 100000:
             break
-        trimmed_dict[n_gram] = count
 
-    return trimmed_dict
+        if n_gram in n_grams_master:
+            n_grams_master[n_gram] += count
+        else:
+            n_grams_master[n_gram] = 1
 
-def dump_ngram_dict(working_directory, n_grams, dump_batch_number):
-    ngrams_pickle_file = os.path.join(working_directory, f"ngrams_{dump_batch_number}.pkl")
-    pickle.dump(n_grams, open(ngrams_pickle_file, "wb"))
+# def dump_ngram_dict(working_directory, n_grams, dump_batch_number):
+#     ngrams_pickle_file = os.path.join(working_directory, f"ngrams_{dump_batch_number}.pkl")
+#     pickle.dump(n_grams, open(ngrams_pickle_file, "wb"))
 
 def dump_ngram_csv(working_directory, n_grams, dataset_name):
     csv_path = os.path.join(working_directory, f"ngrams_{dataset_name}.csv")
@@ -62,7 +63,7 @@ def dump_ngram_csv(working_directory, n_grams, dataset_name):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
-        for i, (ngram, count) in enumerate(n_grams.items()):
+        for i, (ngram, count) in enumerate(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)):
             if i == 1000:
                 break
             writer.writerow({'ngram': ngram, 'count': count})
@@ -96,31 +97,27 @@ def main(working_directory, process_count, n_value, approx_ram_gb, dataset):
     batch = []
     pool = TqdmMultiProcessPool(process_count)
     count = 0
-    n_grams = {}
-    dump_batch_number = 0
+    n_grams_master = {}
+    batch_ngrams = {}
     with tqdm(total=dataset.num_docs(), dynamic_ncols=True, unit="docs") as progress:
         for document, meta in dataset.documents():
 
             batch.append(document)
 
             if len(batch) == batch_size:
-                process_batch(pool, batch, n_value, n_grams)
+                process_batch(pool, batch, n_value, batch_ngrams)
                 batch = []
                 progress.update(batch_size)
                 count += batch_size
 
                 if count >= documents_per_batch:
-                    n_grams = trim_ngram_dict(n_grams)
-                    # dump_ngram_dict(working_directory, n_grams, dump_batch_number)
-                    # n_grams = {}
+                    merge_ngrams(n_grams_master, batch_ngrams)
                     count = 0
-                    dump_batch_number += 1
-
+                    batch_ngrams = {}
 
         if len(batch) != 0:
-            process_batch(pool, batch, n_value, n_grams)
-            n_grams = trim_ngram_dict(n_grams)
-            # dump_ngram_dict(working_directory, n_grams, dump_batch_number)
+            process_batch(pool, batch, n_value, batch_ngrams)
+            merge_ngrams(n_grams_master, batch_ngrams)
             progress.update(len(batch))
 
     pickle.dump(n_grams, open(pickle_file, "wb"))
