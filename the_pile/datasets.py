@@ -696,7 +696,7 @@ class OpenWebText2Dataset(Dataset):
 
     def _download(self):
         download('components/openwebtext2/openwebtext2.jsonl.zst.tar', '9043d1b93c35ff1a38a17e16c73c009d4617dcaab6da15adc0faf4779739a027', [
-            Source('direct', 'https://the-eye.eu/public/AI/pile_preliminary_components/openwebtext2.jsonl.zst.tar'),
+            # Source('direct', 'https://the-eye.eu/public/AI/pile_preliminary_components/openwebtext2.jsonl.zst.tar'),
             Source('direct', 'http://eaidata.bmk.sh/data/openwebtext2.jsonl.zst.tar'),
         ])
 
