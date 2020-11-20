@@ -173,12 +173,12 @@ if __name__ == '__main__':
     if args.dataset_name == "all":
         for dataset_name, dataset in dataset_lookup.items():
             main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset)
-            dataset.clean()
+            # dataset.clean()
     else:
         if args.dataset_name not in dataset_lookup:
             logger.info("Dataset not found in datsets, valid datasets:")
 
         dataset = dataset_lookup[args.dataset_name]
         main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset)
-        dataset.clean()
+        # dataset.clean()
 
