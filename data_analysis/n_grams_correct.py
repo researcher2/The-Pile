@@ -128,20 +128,6 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ra
         logger.info("Dataset pickle file already found, skipping")
         return
 
-    # Basically doing map/reduce - ngrams split by hash into different buckets for later counting
-    # Do some basic worst case calculations on memory usage to avoid blowing out memory
-    maximum_memory = allocated_ram * gigabyte
-    total_size = dataset.size()
-    total_ngrams_size_worst = total_size * n_value
-    memory_usage = total_ngrams_size_worst * 4 * 2 # x4 for dict x2 for sorted
-    split_count = math.ceil(memory_usage / maximum_memory)
-
-    logger.info(f"Allocated RAM: {maximum_memory:,} bytes")
-    logger.info(f"Total Dataset Size: {total_size:,} bytes")
-    logger.info(f"Worst Case Ngrams Size: {total_ngrams_size_worst:,} bytes")
-    logger.info(f"Approxmiate Max Memory Usage: {memory_usage:,} bytes")
-    logger.info(f"Split Count: {split_count}")
-
     batch_size = 10000
     batch = []
     pool = TqdmMultiProcessPool(process_count)
