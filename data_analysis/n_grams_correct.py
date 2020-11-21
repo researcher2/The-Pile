@@ -20,8 +20,9 @@ logger = logging.getLogger(__name__)
 def extract_ngrams(data, num, tqdm_func, global_tqdm):
     ngram_lists = get_ngrams(nltk.word_tokenize(data), num)
     ngrams = map(lambda x: " ".join(x), ngram_lists)
-    print(ngrams)
+    print(list(ngrams))
     hashes = map(lambda x: hash(x), ngrams)
+    print(list(hashes))
     return list(zip(*ngrams, *hashes))
 
 def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buckets):
