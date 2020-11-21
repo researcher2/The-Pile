@@ -6,6 +6,7 @@ import sys
 import csv
 from pathlib import Path
 import sys
+import jsonlines
 
 import nltk
 from nltk.util import ngrams as get_ngrams
@@ -35,37 +36,6 @@ logger = logging.getLogger(__name__)
 #     print(hashes_list[0])
 #     # print(list(hashes))
 #     print("nong")
-
-# Multiprocessing
-def extract_ngrams(data, num, tqdm_func, global_tqdm):
-    ngram_lists = get_ngrams(nltk.word_tokenize(data), num)
-    ngrams = list(map(lambda x: " ".join(x), ngram_lists))
-    ngrams_with_hash = list(map(lambda x: (x, hash(x)), ngrams))
-
-    return ngrams_with_hash
-
-def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buckets):
-    tasks = []
-    for document in batch:
-        task = (extract_ngrams, (document, n_value))
-        tasks.append(task)
-
-    on_done = lambda _ : None
-    on_error = lambda _ : None
-    results = pool.map(None, tasks, on_error, on_done)
-
-    bucket_files = [None] * num_buckets
-    for i in range(num_buckets):
-        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt")
-        bucket_files[i] = open(bucket_file_path, "a")
-
-    for result in results:
-        for (ngram, ngram_hash) in result:
-            bucket = ngram_hash % num_buckets
-            bucket_files[bucket].write(f"{ngram}\n")
-
-    for bucket_file in bucket_files:
-        bucket_file.close()
 
 
     # for document_ngrams in documents:
@@ -105,6 +75,37 @@ gigabyte = 1000 * 1000 * 1000
 #                 break
 #             writer.writerow({'ngram': ngram, 'count': count})
 
+# Multiprocessing
+def extract_ngrams(data, num, tqdm_func, global_tqdm):
+    ngram_lists = get_ngrams(nltk.word_tokenize(data), num)
+    ngrams = list(map(lambda x: " ".join(x), ngram_lists))
+    ngrams_with_hash = list(map(lambda x: (x, hash(x)), ngrams))
+
+    return ngrams_with_hash
+
+def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buckets):
+    tasks = []
+    for document in batch:
+        task = (extract_ngrams, (document, n_value))
+        tasks.append(task)
+
+    on_done = lambda _ : None
+    on_error = lambda _ : None
+    results = pool.map(None, tasks, on_error, on_done)
+
+    bucket_files = [None] * num_buckets
+    for i in range(num_buckets):
+        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt")
+        bucket_files[i] = jsonlines.open(bucket_file_path, mode='a')
+
+    for result in results:
+        for (ngram, ngram_hash) in result:
+            bucket = ngram_hash % num_buckets
+            bucket_files[bucket].write(ngram)
+
+    for bucket_file in bucket_files:
+        bucket_file.close()
+
 def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count):
     logger.info("Generating ngrams and bucketing for later")
 
@@ -121,11 +122,6 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ra
     Path(lock_file).touch()
 
     dataset_name = dataset.name().lower()
-
-    pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
-    if os.path.exists(pickle_file):
-        logger.info("Dataset pickle file already found, skipping")
-        return
 
     batch_size = 10000
     batch = []
@@ -146,6 +142,17 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ra
 
     os.path.remove(lock_file)
     Path(done_file).touch()
+
+def count_ngrams_in_buckets(working_directory):
+
+    count = 0
+    while True:
+        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt")
+        if not os.path.exists(bucket_file_path):
+            break
+
+        with open(bucket_file_path, "r", encoding='utf8') as fh:
+
 
 def main(working_directory, process_count, n_value, allocated_ram, dataset):
     nltk.download('punkt')
@@ -174,6 +181,7 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset):
 
     do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count)
 
+    count_ngrams_in_buckets(working_directory)
 
 
     # pickle.dump(n_grams_master, open(pickle_file, "wb"))
