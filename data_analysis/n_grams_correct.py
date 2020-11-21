@@ -128,7 +128,7 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset):
     logger.info(f"Approxmiate Max Memory Usage: {memory_usage:,} bytes")
     logger.info(f"Split Count: {split_count}")
 
-    batch_size = 1000
+    batch_size = 10000
     batch = []
     pool = TqdmMultiProcessPool(process_count)
     with tqdm(total=dataset.num_docs(), dynamic_ncols=True, unit="docs") as progress:
