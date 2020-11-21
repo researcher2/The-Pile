@@ -95,7 +95,7 @@ def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buc
 
     bucket_files = [None] * num_buckets
     for i in range(num_buckets):
-        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt")
+        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt.jsonl")
         bucket_files[i] = jsonlines.open(bucket_file_path, mode='a')
 
     for result in results:
