@@ -113,11 +113,11 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ra
         logger.info("ngrams already generated and bucketed, skipping")
         return
 
+    lock_file = os.path.join(working_directory, "ngram_buckets.lock")
     if os.path.exists(lock_file):
         logger.info("Looks like you stopped and need to start again, clear the data directory first...")
         sys.exit(0)
 
-    lock_file = os.path.join(working_directory, "ngram_buckets.lock")
     Path(lock_file).touch()
 
     dataset_name = dataset.name().lower()
