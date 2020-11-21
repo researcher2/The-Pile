@@ -106,7 +106,7 @@ gigabyte = 1000 * 1000 * 1000
 #             writer.writerow({'ngram': ngram, 'count': count})
 
 def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count):
-    nltk.download('punkt')
+    logger.info("Generating ngrams and bucketing for later")
 
     done_file = os.path.join(working_directory, "ngram_buckets.done")
     if os.path.exists(done_file):
@@ -121,7 +121,6 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ra
     Path(lock_file).touch()
 
     dataset_name = dataset.name().lower()
-    logger.info(f"Dataset: {dataset_name}")
 
     pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
     if os.path.exists(pickle_file):
