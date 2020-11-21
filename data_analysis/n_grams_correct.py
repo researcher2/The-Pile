@@ -28,6 +28,9 @@ def extract_ngrams(data, num, tqdm_func, global_tqdm):
     print(hash(stuffs[0]))
 
     hashes = map(lambda x: hash(x), ngrams)
+    hashes_list = list(hashes)
+    print(type(hashes_list[0]))
+    print(hashes_list[0])
     # print(list(hashes))
     return list(zip(*ngrams, *hashes))
 
