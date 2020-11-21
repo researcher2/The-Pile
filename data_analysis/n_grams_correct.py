@@ -38,42 +38,8 @@ logger = logging.getLogger(__name__)
 #     print("nong")
 
 
-    # for document_ngrams in documents:
-    #     for n_gram in document_ngrams:
-    #         if n_gram in n_grams:
-    #             n_grams[n_gram] += 1
-    #         else:
-    #             n_grams[n_gram] = 1
-
-
 gigabyte = 1000 * 1000 * 1000
 
-# def merge_ngrams(n_grams_master, n_grams):
-#     logger.info("Merging top 100,000 ngrams in batch.")
-#     for i, (n_gram, count) in enumerate(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)):
-#         if i == 100000:
-#             break
-
-#         if n_gram in n_grams_master:
-#             n_grams_master[n_gram] += count
-#         else:
-#             n_grams_master[n_gram] = 1
-
-# def dump_ngram_dict(working_directory, n_grams, dump_batch_number):
-#     ngrams_pickle_file = os.path.join(working_directory, f"ngrams_{dump_batch_number}.pkl")
-#     pickle.dump(n_grams, open(ngrams_pickle_file, "wb"))
-
-# def dump_ngram_csv(working_directory, n_grams, dataset_name):
-#     csv_path = os.path.join(working_directory, f"ngrams_{dataset_name}.csv")
-#     with open(csv_path, 'w', newline='') as csvfile:
-#         fieldnames = ['ngram', 'count']
-#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-#         writer.writeheader()
-#         for i, (ngram, count) in enumerate(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True)):
-#             if i == 1000:
-#                 break
-#             writer.writerow({'ngram': ngram, 'count': count})
 
 # Multiprocessing
 def extract_ngrams(data, num, tqdm_func, global_tqdm):
@@ -143,18 +109,74 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ra
     os.path.remove(lock_file)
     Path(done_file).touch()
 
-# def count_ngrams_in_buckets(working_directory):
+def count_ngrams_in_buckets(working_directory):
+    count = 0
+    ngrams = {}
+    while True:
+        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt.jsonl")
+        if not os.path.exists(bucket_file_path):
+            break
 
-#     count = 0
-#     while True:
-#         bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt")
-#         if not os.path.exists(bucket_file_path):
-#             break
+        bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
+        if os.path.exists(bucket_pickle_file):
+            continue
 
-#         with open(bucket_file_path, "r", encoding='utf8') as fh:
+        with jsonlines.open(bucket_file_path) as reader:
+            for ngram in reader:
+                if ngram in ngrams:
+                    ngrams[ngram] += 1
+                else:
+                    ngrams[ngram] = 1
 
+        ngrams_sorted = list(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True))
+        pickle.dump(ngrams_sorted, open(bucket_pickle_file, "wb"))
 
-def main(working_directory, process_count, n_value, allocated_ram, dataset):
+        count += 1
+
+def dump_ngram_csv(working_directory, ngrams, dataset_name, limit):
+    csv_path = os.path.join(working_directory, f"ngrams_{dataset_name}_limit{limit}.csv")
+    with open(csv_path, 'w', newline='') as csvfile:
+        fieldnames = ['ngram', 'count']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for ngram, count in ngrams_sorted:
+            writer.writerow({'ngram': ngram, 'count': count})
+
+def get_top_ngrams(working_directory, dataset_name, limit):
+
+    overall_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
+    if os.path.exists(overall_pickle_file):
+        logger.info("Overall pickle file already exists, skipping")
+
+    count = 0
+    ngrams_buckets_limited = []
+    while True:
+        bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
+        if not os.path.exists(bucket_file_path):
+            break
+
+        bucket_ngrams = pickle.load(open(bucket_pickle_file, "rb")) # Presorted above
+        ngrams_limited = {}
+        for i, (ngram, count) in enumerate(bucket_ngrams[0:limit]):
+            if i == limit:
+                break
+            ngrams_limited[ngram] = count
+
+        ngrams_buckets_limited.append(ngrams_limited)
+        count += 1
+
+    overall_ngrams_sorted = {}    
+    for i, (ngram, count) in enumerate(sorted(ngrams_buckets_limited.items(), key = lambda ele: ele[1], reverse = True)):
+        if i == limit:
+            break
+
+        overall_ngrams_sorted[ngram] = count
+
+    pickle.dump(ngrams_sorted, open(overall_pickle_file, "wb"))
+    dump_ngram_csv(working_directory, overall_ngrams_sorted, dataset_name, limit)
+
+def main(working_directory, process_count, n_value, allocated_ram, dataset, top_limit):
     nltk.download('punkt')
 
     dataset_name = dataset.name().lower()
@@ -180,12 +202,8 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset):
     logger.info(f"Split Count: {split_count}")
 
     do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count)
-
-    count_ngrams_in_buckets(working_directory)
-
-
-    # pickle.dump(n_grams_master, open(pickle_file, "wb"))
-    # dump_ngram_csv(working_directory, n_grams_master, dataset_name)
+    count_ngrams_in_buckets(working_directory) 
+    get_top_ngrams(working_directory, dataset_name, top_limit)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
@@ -193,6 +211,7 @@ parser.add_argument("-dataset", "--dataset_name", default="CommonCrawlDataset")
 parser.add_argument("-procs", "--process_count", type=int, default=4)
 parser.add_argument("-n", "--n_value", type=int, default=13)
 parser.add_argument("-ram", "--allocated_ram", type=int, default=80)
+parser.add_argument("-limit", "--top_limit", type=int, default=1000)
 
 datasets = [
     EnronEmailsDataset(),
@@ -230,13 +249,13 @@ if __name__ == '__main__':
 
     if args.dataset_name == "all":
         for dataset_name, dataset in dataset_lookup.items():
-            main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset)
+            main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset, args.top_limit)
             # dataset.clean()
     else:
         if args.dataset_name not in dataset_lookup:
             logger.info("Dataset not found in datsets, valid datasets:")
 
         dataset = dataset_lookup[args.dataset_name]
-        main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset)
+        main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset, args.top_limit)
         # dataset.clean()
 
