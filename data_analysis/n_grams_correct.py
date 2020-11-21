@@ -16,29 +16,31 @@ import logging
 from the_pile.logger import setup_logger_tqdm
 logger = logging.getLogger(__name__)
 
+# def broken_map():
+#     # print(list(ngrams))
+#     stuffs = list(ngrams)
+#     print("bong")
+#     print(stuffs[0])
+#     print(type(hash(stuffs[0])))    
+#     print(hash(stuffs[0]))
+
+#     print("bing")
+#     hashes = map(lambda x: hash(x), ngrams)
+#     hashes_list = list(hashes)
+#     print(hashes_list)
+#     print("dong")
+#     print(type(hashes_list[0]))
+#     print(hashes_list[0])
+#     # print(list(hashes))
+#     print("nong")
+
 # Multiprocessing
 def extract_ngrams(data, num, tqdm_func, global_tqdm):
     ngram_lists = get_ngrams(nltk.word_tokenize(data), num)
-    ngrams = map(lambda x: " ".join(x), ngram_lists)
+    ngrams = list(map(lambda x: " ".join(x), ngram_lists))
+    ngrams_with_hash = list(map(lambda x: x, hash(x), ngrams))
 
-    # print(list(ngrams))
-    stuffs = list(ngrams)
-    print("bong")
-    print(stuffs[0])
-    print(type(hash(stuffs[0])))    
-    print(hash(stuffs[0]))
-
-    print("bing")
-    hashes = map(lambda x: hash(x), stuffs)
-    hashes_list = list(hashes)
-    print(hashes_list)
-    print("dong")
-    print(type(hashes_list[0]))
-    print(hashes_list[0])
-    # print(list(hashes))
-
-    print("nong")
-    return list(zip(*ngrams, *hashes))
+    return ngrams_with_hash
 
 def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buckets):
     tasks = []
