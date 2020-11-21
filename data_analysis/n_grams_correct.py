@@ -35,7 +35,7 @@ def process_batch(pool, batch, n_value, num_buckets):
 
     bucket_files = [None] * num_buckets
     for i in range(num_buckets):
-        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_i.bkt")
+        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt")
         bucket_files[i] = open(bucket_file_path, "a")
 
     for result in results:
