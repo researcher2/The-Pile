@@ -58,7 +58,6 @@ def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buc
         bucket_files[i] = open(bucket_file_path, "a")
 
     for result in results:
-        print(result)
         for (ngram, ngram_hash) in result:
             bucket = ngram_hash % num_buckets
             bucket_files[bucket].write(f"{ngram}\n")
