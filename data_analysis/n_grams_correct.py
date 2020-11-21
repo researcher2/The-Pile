@@ -143,15 +143,15 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ra
     os.path.remove(lock_file)
     Path(done_file).touch()
 
-def count_ngrams_in_buckets(working_directory):
+# def count_ngrams_in_buckets(working_directory):
 
-    count = 0
-    while True:
-        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt")
-        if not os.path.exists(bucket_file_path):
-            break
+#     count = 0
+#     while True:
+#         bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt")
+#         if not os.path.exists(bucket_file_path):
+#             break
 
-        with open(bucket_file_path, "r", encoding='utf8') as fh:
+#         with open(bucket_file_path, "r", encoding='utf8') as fh:
 
 
 def main(working_directory, process_count, n_value, allocated_ram, dataset):
