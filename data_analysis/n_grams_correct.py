@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 def extract_ngrams(data, num, tqdm_func, global_tqdm):
     ngram_lists = get_ngrams(nltk.word_tokenize(data), num)
     ngrams = list(map(lambda x: " ".join(x), ngram_lists))
-    ngrams_with_hash = list(map(lambda x: x, hash(x), ngrams))
+    ngrams_with_hash = list(map(lambda x: (x, hash(x)), ngrams))
 
     return ngrams_with_hash
 
