@@ -118,12 +118,12 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset):
             batch.append(document)
 
             if len(batch) == batch_size:
-                process_batch(pool, batch, n_value, batch_ngrams)
+                process_batch(pool, batch, n_value, split_count)
                 batch = []
                 progress.update(batch_size)
 
         if len(batch) != 0:
-            process_batch(pool, batch, n_value, batch_ngrams)
+            process_batch(pool, batch, n_value, split_count)
             progress.update(len(batch))
 
     # pickle.dump(n_grams_master, open(pickle_file, "wb"))
