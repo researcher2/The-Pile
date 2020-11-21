@@ -23,15 +23,19 @@ def extract_ngrams(data, num, tqdm_func, global_tqdm):
 
     # print(list(ngrams))
     stuffs = list(ngrams)
+    print("bong")
     print(stuffs[0])
     print(type(hash(stuffs[0])))    
     print(hash(stuffs[0]))
 
+    print("bing")
     hashes = map(lambda x: hash(x), ngrams)
     hashes_list = list(hashes)
     print(type(hashes_list[0]))
     print(hashes_list[0])
     # print(list(hashes))
+
+    print("nong")
     return list(zip(*ngrams, *hashes))
 
 def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buckets):
