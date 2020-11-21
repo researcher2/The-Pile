@@ -4,6 +4,8 @@ import pickle
 import math
 import sys
 import csv
+from pathlib import Path
+import sys
 
 import nltk
 from nltk.util import ngrams as get_ngrams
@@ -103,8 +105,20 @@ gigabyte = 1000 * 1000 * 1000
 #                 break
 #             writer.writerow({'ngram': ngram, 'count': count})
 
-def main(working_directory, process_count, n_value, allocated_ram, dataset):
+def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count):
     nltk.download('punkt')
+
+    done_file = os.path.join(working_directory, "ngram_buckets.done")
+    if os.path.exists(done_file):
+        logger.info("ngrams already generated and bucketed, skipping")
+        return
+
+    if os.path.exists(lock_file):
+        logger.info("Looks like you stopped and need to start again, clear the data directory first...")
+        sys.exit(0)
+
+    lock_file = os.path.join(working_directory, "ngram_buckets.lock")
+    Path(lock_file).touch()
 
     dataset_name = dataset.name().lower()
     logger.info(f"Dataset: {dataset_name}")
@@ -144,6 +158,38 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset):
         if len(batch) != 0:
             process_batch(working_directory, dataset_name, pool, batch, n_value, split_count)
             progress.update(len(batch))
+
+    os.path.remove(lock_file)
+    Path(done_file).touch()
+
+def main(working_directory, process_count, n_value, allocated_ram, dataset):
+    nltk.download('punkt')
+
+    dataset_name = dataset.name().lower()
+    logger.info(f"Dataset: {dataset_name}")
+
+    pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}.pkl")
+    if os.path.exists(pickle_file):
+        logger.info("Dataset pickle file already found, skipping")
+        return
+
+    # Basically doing map/reduce - ngrams split by hash into different buckets for later counting
+    # Do some basic worst case calculations on memory usage to avoid blowing out memory
+    maximum_memory = allocated_ram * gigabyte
+    total_size = dataset.size()
+    total_ngrams_size_worst = total_size * n_value
+    memory_usage = total_ngrams_size_worst * 4 * 2 # x4 for dict x2 for sorted
+    split_count = math.ceil(memory_usage / maximum_memory)
+
+    logger.info(f"Allocated RAM: {maximum_memory:,} bytes")
+    logger.info(f"Total Dataset Size: {total_size:,} bytes")
+    logger.info(f"Worst Case Ngrams Size: {total_ngrams_size_worst:,} bytes")
+    logger.info(f"Approxmiate Max Memory Usage: {memory_usage:,} bytes")
+    logger.info(f"Split Count: {split_count}")
+
+    do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count)
+
+
 
     # pickle.dump(n_grams_master, open(pickle_file, "wb"))
     # dump_ngram_csv(working_directory, n_grams_master, dataset_name)
