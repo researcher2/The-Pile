@@ -31,6 +31,8 @@ def extract_ngrams(data, num, tqdm_func, global_tqdm):
     print("bing")
     hashes = map(lambda x: hash(x), ngrams)
     hashes_list = list(hashes)
+    print(hashes_list)
+    print("dong")
     print(type(hashes_list[0]))
     print(hashes_list[0])
     # print(list(hashes))
