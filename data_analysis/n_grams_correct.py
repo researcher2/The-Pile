@@ -72,7 +72,7 @@ def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buc
     for bucket_file in bucket_files:
         bucket_file.close()
 
-def do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count):
+def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count):
     logger.info("Generating ngrams and bucketing for later")
 
     done_file = os.path.join(working_directory, "ngram_buckets.done")
@@ -201,7 +201,7 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset, top_
     logger.info(f"Approxmiate Max Memory Usage: {memory_usage:,} bytes")
     logger.info(f"Split Count: {split_count}")
 
-    do_ngrams_in_buckets(working_directory, process_count, n_value, allocated_ram, dataset, split_count)
+    do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count)
     count_ngrams_in_buckets(working_directory) 
     get_top_ngrams(working_directory, dataset_name, top_limit)
 
