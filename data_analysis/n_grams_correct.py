@@ -63,7 +63,7 @@ def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buc
             bucket_files[bucket].write(f"{ngram}\n")
 
     for bucket_file in bucket_files:
-        close(bucket_file)
+        bucket_file.close()
 
 
     # for document_ngrams in documents:
