@@ -21,6 +21,10 @@ def extract_ngrams(data, num, tqdm_func, global_tqdm):
     ngram_lists = get_ngrams(nltk.word_tokenize(data), num)
     ngrams = map(lambda x: " ".join(x), ngram_lists)
     print(list(ngrams))
+    stuffs = list(ngrams)
+    print(hash(stuffs[0]))
+    print(type(hash(stuffs[0])))
+
     hashes = map(lambda x: hash(x), ngrams)
     print(list(hashes))
     return list(zip(*ngrams, *hashes))
