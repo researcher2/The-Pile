@@ -109,7 +109,7 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
     os.remove(lock_file)
     Path(done_file).touch()
 
-def count_ngrams_in_buckets(working_directory):
+def count_ngrams_in_buckets(working_directory, dataset_name):
     count = 0
     ngrams = {}
     while True:
@@ -202,7 +202,7 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset, top_
     logger.info(f"Split Count: {split_count}")
 
     do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count)
-    count_ngrams_in_buckets(working_directory) 
+    count_ngrams_in_buckets(working_directory, dataset_name) 
     get_top_ngrams(working_directory, dataset_name, top_limit)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
