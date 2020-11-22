@@ -129,7 +129,7 @@ def count_ngrams_bucket(bucket_file_path, tqdm_func, global_tqdm):
 
     global_tqdm.update()
 
-def count_ngrams_in_buckets(working_directory, process_count):
+def count_ngrams_in_buckets(working_directory, process_count, dataset_name):
     count = 0
     bucket_file_paths = []
     while True:
@@ -221,7 +221,7 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset, top_
     logger.info(f"Split Count: {split_count}")
 
     do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count)
-    count_ngrams_in_buckets(working_directory, dataset_name, total_ngrams_size_worst) 
+    count_ngrams_in_buckets(working_directory, process_count, dataset_name) 
     get_top_ngrams(working_directory, dataset_name, top_limit)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
