@@ -169,6 +169,7 @@ def get_top_ngrams(working_directory, dataset_name, limit):
     overall_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
     if os.path.exists(overall_pickle_file):
         logger.info("Overall pickle file already exists, skipping")
+        return
 
     count = 0
     bucket_pickle_paths = []
