@@ -164,7 +164,7 @@ def dump_ngram_csv(working_directory, ngrams, dataset_name, limit):
 
 def get_top_ngrams(working_directory, dataset_name, limit):
 
-    logger.info("Getting top {limit} ngrams.")
+    logger.info(f"Getting top {limit} ngrams.")
 
     overall_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
     if os.path.exists(overall_pickle_file):
