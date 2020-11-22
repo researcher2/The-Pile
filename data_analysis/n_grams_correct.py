@@ -113,7 +113,6 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
 def count_ngrams_bucket(bucket_file_path, tqdm_func, global_tqdm):
     bucket_pickle_file = bucket_file_path.replace(".bkt.jsonl", ".pkl")
     if os.path.exists(bucket_pickle_file):
-        logger.info("Bucket pickle file already exists, skipping.")
         global_tqdm.update()
         return
 
