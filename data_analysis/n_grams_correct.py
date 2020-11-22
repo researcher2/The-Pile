@@ -175,7 +175,7 @@ def get_top_ngrams(working_directory, dataset_name, limit):
     bucket_pickle_paths = []
     while True:
         bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
-        if not os.path.exists(bucket_file_path):
+        if not os.path.exists(bucket_pickle_file):
             break
 
         bucket_pickle_paths.append(bucket_pickle_file)
