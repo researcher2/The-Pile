@@ -124,8 +124,8 @@ def count_ngrams_bucket(bucket_file_path, tqdm_func, global_tqdm):
             else:
                 ngrams[ngram] = 1
 
-        ngrams_sorted = list(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True))
-        pickle.dump(ngrams_sorted, open(bucket_pickle_file, "wb"))
+    ngrams_sorted = list(sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True))
+    pickle.dump(ngrams_sorted, open(bucket_pickle_file, "wb"))
 
     global_tqdm.update()
 
