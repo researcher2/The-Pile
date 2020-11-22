@@ -169,30 +169,28 @@ def get_top_ngrams(working_directory, dataset_name, limit):
         logger.info("Overall pickle file already exists, skipping")
 
     count = 0
-    ngrams_buckets_limited = []
+    ngrams_limited = {}
     while True:
         bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
         if not os.path.exists(bucket_file_path):
             break
 
         bucket_ngrams = pickle.load(open(bucket_pickle_file, "rb")) # Presorted above
-        ngrams_limited = {}
         for i, (ngram, count) in enumerate(bucket_ngrams[0:limit]):
             if i == limit:
                 break
             ngrams_limited[ngram] = count
 
-        ngrams_buckets_limited.append(ngrams_limited)
         count += 1
 
     overall_ngrams_sorted = {}    
-    for i, (ngram, count) in enumerate(sorted(ngrams_buckets_limited.items(), key = lambda ele: ele[1], reverse = True)):
+    for i, (ngram, count) in enumerate(sorted(ngrams_limited.items(), key = lambda ele: ele[1], reverse = True)):
         if i == limit:
             break
 
         overall_ngrams_sorted[ngram] = count
 
-    pickle.dump(ngrams_sorted, open(overall_pickle_file, "wb"))
+    pickle.dump(overall_ngrams_sorted, open(overall_pickle_file, "wb"))
     dump_ngram_csv(working_directory, overall_ngrams_sorted, dataset_name, limit)
 
 def main(working_directory, process_count, n_value, allocated_ram, dataset, top_limit):
