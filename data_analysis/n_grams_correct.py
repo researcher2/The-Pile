@@ -146,7 +146,7 @@ def count_ngrams_in_buckets(working_directory, process_count, dataset_name):
         task = (count_ngrams_bucket, (bucket_file_path,))
         tasks.append(task)
 
-    with tqdm(total=len(tasks), dynamic_ncols=True, unit="docs") as progress:
+    with tqdm(total=len(tasks), dynamic_ncols=True, unit="buckets") as progress:
         on_done = lambda _ : None
         on_error = lambda _ : None
         pool.map(progress, tasks, on_error, on_done)
