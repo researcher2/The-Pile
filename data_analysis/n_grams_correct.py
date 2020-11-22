@@ -169,35 +169,35 @@ def get_top_ngrams(working_directory, dataset_name, limit):
     overall_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
     if os.path.exists(overall_pickle_file):
         logger.info("Overall pickle file already exists, skipping")
-        return
+        overall_ngrams_sorted = pickle.load(open(overall_pickle_file, "rb"))
+    else:
+        count = 0
+        bucket_pickle_paths = []
+        while True:
+            bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
+            if not os.path.exists(bucket_pickle_file):
+                break
 
-    count = 0
-    bucket_pickle_paths = []
-    while True:
-        bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
-        if not os.path.exists(bucket_pickle_file):
-            break
+            bucket_pickle_paths.append(bucket_pickle_file)
+            count += 1
 
-        bucket_pickle_paths.append(bucket_pickle_file)
-        count += 1
+        ngrams_limited = {}
+        for bucket_pickle_file in tqdm(bucket_pickle_paths):
 
-    ngrams_limited = {}
-    for bucket_pickle_file in tqdm(bucket_pickle_paths):
+            bucket_ngrams = pickle.load(open(bucket_pickle_file, "rb")) # Presorted above
+            for i, (ngram, count) in enumerate(bucket_ngrams[0:limit]):
+                if i == limit:
+                    break
+                ngrams_limited[ngram] = count
 
-        bucket_ngrams = pickle.load(open(bucket_pickle_file, "rb")) # Presorted above
-        for i, (ngram, count) in enumerate(bucket_ngrams[0:limit]):
+        overall_ngrams_sorted = {}    
+        for i, (ngram, count) in enumerate(sorted(ngrams_limited.items(), key = lambda ele: ele[1], reverse = True)):
             if i == limit:
                 break
-            ngrams_limited[ngram] = count
 
-    overall_ngrams_sorted = {}    
-    for i, (ngram, count) in enumerate(sorted(ngrams_limited.items(), key = lambda ele: ele[1], reverse = True)):
-        if i == limit:
-            break
+            overall_ngrams_sorted[ngram] = count
 
-        overall_ngrams_sorted[ngram] = count
-
-    pickle.dump(overall_ngrams_sorted, open(overall_pickle_file, "wb"))
+        pickle.dump(overall_ngrams_sorted, open(overall_pickle_file, "wb"))
 
     logger.info("Saving to CSV.")
     dump_ngram_csv(working_directory, overall_ngrams_sorted, dataset_name, limit)
