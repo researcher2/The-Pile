@@ -160,7 +160,7 @@ def dump_ngram_csv(working_directory, ngrams, dataset_name, limit):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
-        for ngram, count in ngrams_sorted:
+        for ngram, count in ngrams:
             writer.writerow({'ngram': ngram, 'count': count})
 
 def get_top_ngrams(working_directory, dataset_name, limit):
