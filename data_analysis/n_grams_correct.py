@@ -89,7 +89,7 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
 
     Path(lock_file).touch()    
 
-    batch_size = 10000
+    batch_size = 1000
     batch = []
     pool = TqdmMultiProcessPool(process_count)
     with tqdm(total=dataset.num_docs(), dynamic_ncols=True, unit="docs") as progress:
@@ -126,8 +126,10 @@ def count_ngrams_bucket(bucket_file_path, tqdm_func, global_tqdm):
 
     ngrams_sorted = list(sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True))
     pickle.dump(ngrams_sorted, open(bucket_pickle_file, "wb"))
+    os.remove(bucket_file_path)
 
     global_tqdm.update()
+
 
 def count_ngrams_in_buckets(working_directory, process_count, dataset_name):
     count = 0
@@ -152,8 +154,8 @@ def count_ngrams_in_buckets(working_directory, process_count, dataset_name):
         pool.map(progress, tasks, on_error, on_done)
 
 
-def dump_ngram_csv(working_directory, ngrams, dataset_name, limit):
-    csv_path = os.path.join(working_directory, f"ngrams_{dataset_name}_limit{limit}.csv")
+def dump_ngram_csv(output_directory, ngrams, dataset_name, limit):
+    csv_path = os.path.join(output_directory, dataset_name, f"ngrams_{dataset_name}_limit{limit}.csv")
     with open(csv_path, 'w', newline='') as csvfile:
         fieldnames = ['ngram', 'count']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -165,8 +167,11 @@ def dump_ngram_csv(working_directory, ngrams, dataset_name, limit):
 def get_top_ngrams(working_directory, dataset_name, limit):
 
     logger.info(f"Getting top {limit} ngrams.")
+    output_directory = os.path.join(working_directory, dataset_name)
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
 
-    overall_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
+    overall_pickle_file = os.path.join(output_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
     if os.path.exists(overall_pickle_file):
         logger.info("Overall pickle file already exists, skipping")
         overall_ngrams_sorted = pickle.load(open(overall_pickle_file, "rb"))
@@ -200,7 +205,7 @@ def get_top_ngrams(working_directory, dataset_name, limit):
         pickle.dump(overall_ngrams_sorted, open(overall_pickle_file, "wb"))
 
     logger.info("Saving to CSV.")
-    dump_ngram_csv(working_directory, overall_ngrams_sorted, dataset_name, limit)
+    dump_ngram_csv(output_directory, overall_ngrams_sorted, dataset_name, limit)
 
 def main(working_directory, process_count, n_value, allocated_ram, dataset, top_limit):
     nltk.download('punkt')
@@ -276,12 +281,12 @@ if __name__ == '__main__':
     if args.dataset_name == "all":
         for dataset_name, dataset in dataset_lookup.items():
             main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset, args.top_limit)
-            # dataset.clean()
+            dataset.clean()
     else:
         if args.dataset_name not in dataset_lookup:
             logger.info("Dataset not found in datsets, valid datasets:")
 
         dataset = dataset_lookup[args.dataset_name]
         main(args.working_directory, args.process_count, args.n_value, args.allocated_ram, dataset, args.top_limit)
-        # dataset.clean()
+        dataset.clean()
 
