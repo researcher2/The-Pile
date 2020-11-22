@@ -75,19 +75,19 @@ def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buc
 def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count):
     logger.info("Generating ngrams and bucketing for later")
 
-    done_file = os.path.join(working_directory, "ngram_buckets.done")
+    dataset_name = dataset.name().lower()
+
+    done_file = os.path.join(working_directory, f"ngram_buckets_{dataset_name}.done")
     if os.path.exists(done_file):
         logger.info("ngrams already generated and bucketed, skipping")
         return
 
-    lock_file = os.path.join(working_directory, "ngram_buckets.lock")
+    lock_file = os.path.join(working_directory, f"ngram_buckets_{dataset_name}.lock")
     if os.path.exists(lock_file):
         logger.info("Looks like you stopped and need to start again, clear the data directory first...")
         sys.exit(0)
 
-    Path(lock_file).touch()
-
-    dataset_name = dataset.name().lower()
+    Path(lock_file).touch()    
 
     batch_size = 10000
     batch = []
@@ -106,7 +106,7 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
             process_batch(working_directory, dataset_name, pool, batch, n_value, split_count)
             progress.update(len(batch))
 
-    os.path.remove(lock_file)
+    os.remove(lock_file)
     Path(done_file).touch()
 
 def count_ngrams_in_buckets(working_directory):
