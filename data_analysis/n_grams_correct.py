@@ -109,24 +109,28 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
     os.remove(lock_file)
     Path(done_file).touch()
 
-def count_ngrams_in_buckets(working_directory, dataset_name):
+def count_ngrams_in_buckets(working_directory, dataset_name, ngram_count_estimate):
     count = 0
     ngrams = {}
-    while True:
-        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt.jsonl")
-        if not os.path.exists(bucket_file_path):
-            break
 
-        bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
-        if os.path.exists(bucket_pickle_file):
-            continue
+    with tqdm(total=ngram_count_estimate, dynamic_ncols=True, unit="docs") as progress:
+        while True:
+            bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt.jsonl")
+            if not os.path.exists(bucket_file_path):
+                break
 
-        with jsonlines.open(bucket_file_path) as reader:
-            for ngram in reader:
-                if ngram in ngrams:
-                    ngrams[ngram] += 1
-                else:
-                    ngrams[ngram] = 1
+            bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
+            if os.path.exists(bucket_pickle_file):
+                continue
+
+            with jsonlines.open(bucket_file_path) as reader:
+                for ngram in reader:
+                    if ngram in ngrams:
+                        ngrams[ngram] += 1
+                    else:
+                        ngrams[ngram] = 1
+
+                    progress.update()
 
         ngrams_sorted = list(sorted(n_grams.items(), key = lambda ele: ele[1], reverse = True))
         pickle.dump(ngrams_sorted, open(bucket_pickle_file, "wb"))
@@ -202,7 +206,7 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset, top_
     logger.info(f"Split Count: {split_count}")
 
     do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count)
-    count_ngrams_in_buckets(working_directory, dataset_name) 
+    count_ngrams_in_buckets(working_directory, dataset_name, total_ngrams_size_worst) 
     get_top_ngrams(working_directory, dataset_name, top_limit)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
