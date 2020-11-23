@@ -14,6 +14,7 @@ from nltk.probability import FreqDist
 from tqdm_multiprocess import TqdmMultiProcessPool
 
 from the_pile.datasets import *
+from the_pile.archiver import Archive, Reader
 
 import logging
 from the_pile.logger import setup_logger_tqdm
@@ -49,7 +50,7 @@ def extract_ngrams(data, num, tqdm_func, global_tqdm):
 
     return ngrams_with_hash
 
-def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buckets):
+def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buckets, bucket_files):
     tasks = []
     for document in batch:
         task = (extract_ngrams, (document, n_value))
@@ -59,18 +60,13 @@ def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buc
     on_error = lambda _ : None
     results = pool.map(None, tasks, on_error, on_done)
 
-    bucket_files = [None] * num_buckets
-    for i in range(num_buckets):
-        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt.jsonl")
-        bucket_files[i] = jsonlines.open(bucket_file_path, mode='a')
-
     for result in results:
         for (ngram, ngram_hash) in result:
             bucket = ngram_hash % num_buckets
-            bucket_files[bucket].write(ngram)
+            bucket_files[bucket].add_data(ngram, meta=None)
 
     for bucket_file in bucket_files:
-        bucket_file.close()
+        bucket_file.commit()
 
 def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count):
     logger.info("Generating ngrams and bucketing for later")
@@ -92,67 +88,41 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
     batch_size = 1000
     batch = []
     pool = TqdmMultiProcessPool(process_count)
+
+    bucket_files = [None] * num_buckets
+    for i in range(num_buckets):
+        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt.jsonl.zst")
+        bucket_files[i] = Archive(bucket_file_path)
+
     with tqdm(total=dataset.num_docs(), dynamic_ncols=True, unit="docs") as progress:
         for document, meta in dataset.documents():
 
             batch.append(document)
 
             if len(batch) == batch_size:
-                process_batch(working_directory, dataset_name, pool, batch, n_value, split_count)
+                process_batch(working_directory, dataset_name, pool, batch, n_value, split_count, bucket_files)
                 batch = []
                 progress.update(batch_size)
 
         if len(batch) != 0:
-            process_batch(working_directory, dataset_name, pool, batch, n_value, split_count)
+            process_batch(working_directory, dataset_name, pool, batch, n_value, split_count, bucket_files)
             progress.update(len(batch))
 
     os.remove(lock_file)
     Path(done_file).touch()
 
-# Multiprocessed
-def count_ngrams_bucket(bucket_file_path, tqdm_func, global_tqdm):
-    bucket_pickle_file = bucket_file_path.replace(".bkt.jsonl", ".pkl")
-    if os.path.exists(bucket_pickle_file):
-        global_tqdm.update()
-        return
 
+def count_ngrams_in_bucket(bucket_file_path):
     ngrams = {}
-    with jsonlines.open(bucket_file_path) as reader:
-        for ngram in reader:
-            if ngram in ngrams:
-                ngrams[ngram] += 1
-            else:
-                ngrams[ngram] = 1
+    reader = Reader()
+    for ngram in reader.read_jsonl(bucket_file_path):
+        if ngram in ngrams:
+            ngrams[ngram] += 1
+        else:
+            ngrams[ngram] = 1
 
     ngrams_sorted = list(sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True))
-    pickle.dump(ngrams_sorted, open(bucket_pickle_file, "wb"))
-    os.remove(bucket_file_path)
-
-    global_tqdm.update()
-
-
-def count_ngrams_in_buckets(working_directory, process_count, dataset_name):
-    count = 0
-    bucket_file_paths = []
-    while True:
-        bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.bkt.jsonl")
-        if not os.path.exists(bucket_file_path):
-            break
-
-        bucket_file_paths.append(bucket_file_path)
-        count += 1
-
-    pool = TqdmMultiProcessPool(1) # Oops this is memory limited
-    tasks = []
-    for bucket_file_path in bucket_file_paths:
-        task = (count_ngrams_bucket, (bucket_file_path,))
-        tasks.append(task)
-
-    with tqdm(total=len(tasks), dynamic_ncols=True, unit="buckets") as progress:
-        on_done = lambda _ : None
-        on_error = lambda _ : None
-        pool.map(progress, tasks, on_error, on_done)
-
+    return ngrams_sorted
 
 def dump_ngram_csv(output_directory, ngrams, dataset_name, limit):
     csv_path = os.path.join(output_directory, dataset_name, f"ngrams_{dataset_name}_limit{limit}.csv")
@@ -161,7 +131,7 @@ def dump_ngram_csv(output_directory, ngrams, dataset_name, limit):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
-        for ngram, count in ngrams.items():
+        for ngram, count in ngrams:
             writer.writerow({'ngram': ngram, 'count': count})
 
 def get_top_ngrams(working_directory, dataset_name, limit):
@@ -174,38 +144,27 @@ def get_top_ngrams(working_directory, dataset_name, limit):
     overall_pickle_file = os.path.join(output_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
     if os.path.exists(overall_pickle_file):
         logger.info("Overall pickle file already exists, skipping")
-        overall_ngrams_sorted = pickle.load(open(overall_pickle_file, "rb"))
-    else:
+        overall_top_limit_ngrams = pickle.load(open(overall_pickle_file, "rb"))
+    else:        
         count = 0
-        bucket_pickle_paths = []
+        overall_ngrams = []
         while True:
-            bucket_pickle_file = os.path.join(working_directory, f"ngrams_{dataset_name}_{count}.pkl")
-            if not os.path.exists(bucket_pickle_file):
+            bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt.jsonl.zst")
+            if not os.path.exists(bucket_file_path):
                 break
 
-            bucket_pickle_paths.append(bucket_pickle_file)
+            # Accumulate ngrams in bucket then add to full list
+            bucket_ngrams_sorted = count_ngrams_in_bucket(bucket_file_path)
+            overall_ngrams += bucket_ngrams_sorted[0:limit]
+
             count += 1
 
-        ngrams_limited = {}
-        for bucket_pickle_file in tqdm(bucket_pickle_paths):
-
-            bucket_ngrams = pickle.load(open(bucket_pickle_file, "rb")) # Presorted above
-            for i, (ngram, count) in enumerate(bucket_ngrams[0:limit]):
-                if i == limit:
-                    break
-                ngrams_limited[ngram] = count
-
-        overall_ngrams_sorted = {}    
-        for i, (ngram, count) in enumerate(sorted(ngrams_limited.items(), key = lambda ele: ele[1], reverse = True)):
-            if i == limit:
-                break
-
-            overall_ngrams_sorted[ngram] = count
-
-        pickle.dump(overall_ngrams_sorted, open(overall_pickle_file, "wb"))
+        overall_ngrams_sorted = list(sorted(ngrams_limited, key = lambda ele: ele[1], reverse = True))
+        overall_top_limit_ngrams = overall_ngrams_sorted[0:limit]
+        pickle.dump(overall_top_limit_ngrams, open(overall_pickle_file, "wb"))
 
     logger.info("Saving to CSV.")
-    dump_ngram_csv(output_directory, overall_ngrams_sorted, dataset_name, limit)
+    dump_ngram_csv(output_directory, overall_top_limit_ngrams, dataset_name, limit)
 
 def main(working_directory, process_count, n_value, allocated_ram, dataset, top_limit):
     nltk.download('punkt')
@@ -233,7 +192,6 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset, top_
     logger.info(f"Split Count: {split_count}")
 
     do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count)
-    count_ngrams_in_buckets(working_directory, process_count, dataset_name) 
     get_top_ngrams(working_directory, dataset_name, top_limit)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
