@@ -89,8 +89,8 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
     batch = []
     pool = TqdmMultiProcessPool(process_count)
 
-    bucket_files = [None] * num_buckets
-    for i in range(num_buckets):
+    bucket_files = [None] * split_count
+    for i in range(split_count):
         bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt.jsonl.zst")
         bucket_files[i] = Archive(bucket_file_path)
 
