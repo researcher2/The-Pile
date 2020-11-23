@@ -65,9 +65,6 @@ def process_batch(working_directory, dataset_name, pool, batch, n_value, num_buc
             bucket = ngram_hash % num_buckets
             bucket_files[bucket].add_data(ngram, meta=None)
 
-    for bucket_file in bucket_files:
-        bucket_file.commit()
-
 def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count):
     logger.info("Generating ngrams and bucketing for later")
 
@@ -107,6 +104,9 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
         if len(batch) != 0:
             process_batch(working_directory, dataset_name, pool, batch, n_value, split_count, bucket_files)
             progress.update(len(batch))
+
+    for bucket_file in bucket_files:
+        bucket_file.commit()
 
     os.remove(lock_file)
     Path(done_file).touch()
