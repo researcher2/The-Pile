@@ -148,14 +148,11 @@ def get_top_ngrams(working_directory, dataset_name, limit):
         overall_top_limit_ngrams = pickle.load(open(overall_pickle_file, "rb"))
     else:        
         files = glob.glob(os.path.join(working_directory, f"ngrams_{dataset_name}_*.bkt.jsonl.zst*"))
-        count = 0
         overall_ngrams = []
         for file in tqdm(files):
             # Accumulate ngrams in bucket then add to full list
             bucket_ngrams_sorted = count_ngrams_in_bucket(file)
             overall_ngrams += bucket_ngrams_sorted[0:limit]
-
-            count += 1
 
         overall_ngrams_sorted = list(sorted(ngrams_limited, key = lambda ele: ele[1], reverse = True))
         overall_top_limit_ngrams = overall_ngrams_sorted[0:limit]
