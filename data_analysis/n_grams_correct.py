@@ -7,6 +7,7 @@ import csv
 from pathlib import Path
 import sys
 import jsonlines
+import glob
 
 import nltk
 from nltk.util import ngrams as get_ngrams
@@ -146,15 +147,12 @@ def get_top_ngrams(working_directory, dataset_name, limit):
         logger.info("Overall pickle file already exists, skipping")
         overall_top_limit_ngrams = pickle.load(open(overall_pickle_file, "rb"))
     else:        
+        files = glob.glob(os.path.join(working_directory, f"ngrams_{dataset_name}_*.bkt.jsonl.zst*"))
         count = 0
         overall_ngrams = []
-        while True:
-            bucket_file_path = os.path.join(working_directory, f"ngrams_{dataset_name}_{i}.bkt.jsonl.zst")
-            if not os.path.exists(bucket_file_path):
-                break
-
+        for file in tqdm(files):
             # Accumulate ngrams in bucket then add to full list
-            bucket_ngrams_sorted = count_ngrams_in_bucket(bucket_file_path)
+            bucket_ngrams_sorted = count_ngrams_in_bucket(file)
             overall_ngrams += bucket_ngrams_sorted[0:limit]
 
             count += 1
