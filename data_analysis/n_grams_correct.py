@@ -154,7 +154,7 @@ def get_top_ngrams(working_directory, dataset_name, limit):
             bucket_ngrams_sorted = count_ngrams_in_bucket(file)
             overall_ngrams += bucket_ngrams_sorted[0:limit]
 
-        overall_ngrams_sorted = list(sorted(ngrams_limited, key = lambda ele: ele[1], reverse = True))
+        overall_ngrams_sorted = list(sorted(overall_ngrams, key = lambda ele: ele[1], reverse = True))
         overall_top_limit_ngrams = overall_ngrams_sorted[0:limit]
         pickle.dump(overall_top_limit_ngrams, open(overall_pickle_file, "wb"))
 
