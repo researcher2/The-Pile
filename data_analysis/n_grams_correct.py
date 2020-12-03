@@ -126,7 +126,7 @@ def count_ngrams_in_bucket(bucket_file_path):
     return ngrams_sorted
 
 def dump_ngram_csv(output_directory, ngrams, dataset_name, limit):
-    csv_path = os.path.join(output_directory, dataset_name, f"ngrams_{dataset_name}_limit{limit}.csv")
+    csv_path = os.path.join(output_directory, f"ngrams_{dataset_name}_limit{limit}.csv")
     with open(csv_path, 'w', newline='') as csvfile:
         fieldnames = ['ngram', 'count']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -144,7 +144,7 @@ def get_top_ngrams(working_directory, dataset_name, limit):
 
     overall_pickle_file = os.path.join(output_directory, f"ngrams_{dataset_name}_limit{limit}.pkl")
     if os.path.exists(overall_pickle_file):
-        logger.info("Overall pickle file already exists, skipping")
+        logger.info("Overall pickle file already exists, loading")
         overall_top_limit_ngrams = pickle.load(open(overall_pickle_file, "rb"))
     else:        
         files = glob.glob(os.path.join(working_directory, f"ngrams_{dataset_name}_*.bkt.jsonl.zst*"))
