@@ -171,7 +171,7 @@ def get_statistics(working_directory, dataset_name, limit):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
-    statistics_pickle_file = os.path.join(output_directory, f"statistics{dataset_name}_limit{limit}.pkl")
+    statistics_pickle_file = os.path.join(output_directory, f"statistics_{dataset_name}_limit{limit}.pkl")
 
     files = glob.glob(os.path.join(working_directory, f"ngrams_{dataset_name}_*.bkt.jsonl.zst*"))
     overall_ngrams = []
