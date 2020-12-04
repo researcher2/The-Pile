@@ -172,7 +172,7 @@ def get_statistics(working_directory, dataset_name, limit):
         os.makedirs(output_directory)
 
     statistics_pickle_file = os.path.join(output_directory, f"statistics_{dataset_name}_limit{limit}.pkl")
-    if os.path.exists(overall_pickle_file):
+    if os.path.exists(statistics_pickle_file):
         logger.info("Statistics pickle file already exists, loading")
         statistics = pickle.load(open(statistics_pickle_file, "rb"))
         overall_count, overall_unique_count, overall_ngrams_sorted, frequencies = tuple(statistics)
