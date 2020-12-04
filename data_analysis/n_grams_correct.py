@@ -193,7 +193,7 @@ def get_statistics(working_directory, dataset_name, limit):
         overall_ngrams += bucket_ngrams_sorted[len(bucket_ngrams_sorted) - limit:] # Bottom limit
 
         for (ngram, count) in bucket_ngrams_sorted:
-            histogram_bucket = count / histogram_bucket_size
+            histogram_bucket = int(count / histogram_bucket_size)
             frequencies[histogram_bucket] += count
 
     # Dump
