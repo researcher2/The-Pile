@@ -209,7 +209,7 @@ def get_statistics(working_directory, dataset_name, limit):
     logger.info("Saving to CSV.")
     top_and_bottom = []
     top_and_bottom += overall_ngrams_sorted[0:limit] # Top limit
-    top_and_bottom += overall_ngrams_sorted[len(bucket_ngrams_sorted) - limit:] # Bottom limit
+    top_and_bottom += overall_ngrams_sorted[len(overall_ngrams_sorted) - limit:] # Bottom limit
 
     dump_ngram_csv(output_directory, top_and_bottom, dataset_name, limit)
 
