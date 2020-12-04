@@ -116,14 +116,18 @@ def do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, spl
 def count_ngrams_in_bucket(bucket_file_path):
     ngrams = {}
     reader = Reader()
+    count = 0
+    unique_count = 0
     for ngram in reader.read_jsonl(bucket_file_path):
+        count += 1
         if ngram in ngrams:
-            ngrams[ngram] += 1
+            ngrams[ngram] += 1            
         else:
             ngrams[ngram] = 1
+            unique_count += 1
 
     ngrams_sorted = list(sorted(ngrams.items(), key = lambda ele: ele[1], reverse = True))
-    return ngrams_sorted
+    return ngrams_sorted, count, unique_count
 
 def dump_ngram_csv(output_directory, ngrams, dataset_name, limit):
     csv_path = os.path.join(output_directory, f"ngrams_{dataset_name}_limit{limit}.csv")
@@ -151,7 +155,7 @@ def get_top_ngrams(working_directory, dataset_name, limit):
         overall_ngrams = []
         for file in tqdm(files):
             # Accumulate ngrams in bucket then add to full list
-            bucket_ngrams_sorted = count_ngrams_in_bucket(file)
+            bucket_ngrams_sorted, _, _ = count_ngrams_in_bucket(file)
             overall_ngrams += bucket_ngrams_sorted[0:limit]
 
         overall_ngrams_sorted = list(sorted(overall_ngrams, key = lambda ele: ele[1], reverse = True))
@@ -160,6 +164,43 @@ def get_top_ngrams(working_directory, dataset_name, limit):
 
     logger.info("Saving to CSV.")
     dump_ngram_csv(output_directory, overall_top_limit_ngrams, dataset_name, limit)
+
+def get_statistics(working_directory, dataset_name, limit):
+    logger.info(f"Getting statistics, rarity_limit={limit}.")
+    output_directory = os.path.join(working_directory, dataset_name)
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    statistics_pickle_file = os.path.join(output_directory, f"statistics{dataset_name}_limit{limit}.pkl")
+
+    files = glob.glob(os.path.join(working_directory, f"ngrams_{dataset_name}_*.bkt.jsonl.zst*"))
+    overall_ngrams = []
+    overall_count = 0
+    overall_unique_count = 0
+
+    # cc max
+    cc_histogram_bucket_max = 11034000
+    histogram_bucket_count = 1000
+    histogram_bucket_size = cc_histogram_bucket_max / 1000
+    frequencies = [0] * histogram_bucket_count
+
+    for file in tqdm(files):
+        # Accumulate ngrams in buckets
+        bucket_ngrams_sorted, count, unique_count = count_ngrams_in_bucket(file)
+        overall_count += count
+        overall_unique_count += unique_count 
+        overall_ngrams += bucket_ngrams_sorted[0:limit] # Top limit
+        overall_ngrams += bucket_ngrams_sorted[len(bucket_ngrams_sorted) - limit:] # Bottom limit
+
+        for (ngram, count) in bucket_ngrams_sorted:
+            histogram_bucket = count / histogram_bucket_size
+            frequencies[histogram_bucket] += count
+
+    # Dump
+    overall_ngrams_sorted = list(sorted(overall_ngrams, key = lambda ele: ele[1], reverse = True))
+    # overall_top_limit_ngrams = overall_ngrams_sorted[0:limit]
+    statistics = [overall_count, overall_unique_count, overall_ngrams_sorted, frequencies]
+    pickle.dump(statistics, open(statistics_pickle_file, "wb"))
 
 def main(working_directory, process_count, n_value, allocated_ram, dataset, top_limit):
     nltk.download('punkt')
@@ -187,7 +228,8 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset, top_
     logger.info(f"Split Count: {split_count}")
 
     do_ngrams_in_buckets(working_directory, process_count, n_value, dataset, split_count)
-    get_top_ngrams(working_directory, dataset_name, top_limit)
+    # get_top_ngrams(working_directory, dataset_name, top_limit)
+    get_statistics(working_directory, dataset_name, top_limit)
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
