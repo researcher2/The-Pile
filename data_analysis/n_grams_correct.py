@@ -172,35 +172,46 @@ def get_statistics(working_directory, dataset_name, limit):
         os.makedirs(output_directory)
 
     statistics_pickle_file = os.path.join(output_directory, f"statistics_{dataset_name}_limit{limit}.pkl")
+    if os.path.exists(overall_pickle_file):
+        logger.info("Statistics pickle file already exists, loading")
+        statistics = pickle.load(open(statistics_pickle_file, "rb"))
+        overall_count, overall_unique_count, overall_ngrams_sorted, frequencies = tuple(statistics)
+    else:
+        files = glob.glob(os.path.join(working_directory, f"ngrams_{dataset_name}_*.bkt.jsonl.zst*"))
+        overall_ngrams = []
+        overall_count = 0
+        overall_unique_count = 0
 
-    files = glob.glob(os.path.join(working_directory, f"ngrams_{dataset_name}_*.bkt.jsonl.zst*"))
-    overall_ngrams = []
-    overall_count = 0
-    overall_unique_count = 0
+        # cc max
+        cc_histogram_bucket_max = 11034000
+        histogram_bucket_count = 1000
+        histogram_bucket_size = cc_histogram_bucket_max / 1000
+        frequencies = [0] * histogram_bucket_count
 
-    # cc max
-    cc_histogram_bucket_max = 11034000
-    histogram_bucket_count = 1000
-    histogram_bucket_size = cc_histogram_bucket_max / 1000
-    frequencies = [0] * histogram_bucket_count
+        for file in tqdm(files):
+            # Accumulate ngrams in buckets
+            bucket_ngrams_sorted, count, unique_count = count_ngrams_in_bucket(file)
+            overall_count += count
+            overall_unique_count += unique_count 
+            overall_ngrams += bucket_ngrams_sorted[0:limit] # Top limit
+            overall_ngrams += bucket_ngrams_sorted[len(bucket_ngrams_sorted) - limit:] # Bottom limit
 
-    for file in tqdm(files):
-        # Accumulate ngrams in buckets
-        bucket_ngrams_sorted, count, unique_count = count_ngrams_in_bucket(file)
-        overall_count += count
-        overall_unique_count += unique_count 
-        overall_ngrams += bucket_ngrams_sorted[0:limit] # Top limit
-        overall_ngrams += bucket_ngrams_sorted[len(bucket_ngrams_sorted) - limit:] # Bottom limit
+            for (ngram, count) in bucket_ngrams_sorted:
+                histogram_bucket = int(count / histogram_bucket_size)
+                frequencies[histogram_bucket] += count
 
-        for (ngram, count) in bucket_ngrams_sorted:
-            histogram_bucket = int(count / histogram_bucket_size)
-            frequencies[histogram_bucket] += count
+        # Dump
+        overall_ngrams_sorted = list(sorted(overall_ngrams, key = lambda ele: ele[1], reverse = True))
+        # overall_top_limit_ngrams = overall_ngrams_sorted[0:limit]
+        statistics = [overall_count, overall_unique_count, overall_ngrams_sorted, frequencies]
+        pickle.dump(statistics, open(statistics_pickle_file, "wb"))
 
-    # Dump
-    overall_ngrams_sorted = list(sorted(overall_ngrams, key = lambda ele: ele[1], reverse = True))
-    # overall_top_limit_ngrams = overall_ngrams_sorted[0:limit]
-    statistics = [overall_count, overall_unique_count, overall_ngrams_sorted, frequencies]
-    pickle.dump(statistics, open(statistics_pickle_file, "wb"))
+    logger.info("Saving to CSV.")
+    top_and_bottom = []
+    top_and_bottom += overall_ngrams_sorted[0:limit] # Top limit
+    top_and_bottom += overall_ngrams_sorted[len(bucket_ngrams_sorted) - limit:] # Bottom limit
+
+    dump_ngram_csv(output_directory, top_and_bottom, dataset_name, limit)
 
 def main(working_directory, process_count, n_value, allocated_ram, dataset, top_limit):
     nltk.download('punkt')
