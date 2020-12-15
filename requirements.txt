@@ -13,3 +13,4 @@ cassandra-driver
 motor
 
 alembic
+matplotplib
