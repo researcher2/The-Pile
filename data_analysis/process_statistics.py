@@ -14,7 +14,7 @@ def main(working_directory, dataset_name, limit):
     output_directory = os.path.join(working_directory, dataset_name)
 
     statistics_pickle_file = os.path.join(output_directory, f"statistics_{dataset_name}_limit{limit}.pkl")
-    if not os.exists(statistics_pickle_file):
+    if not os.path.exists(statistics_pickle_file):
         logger.info("Statistics file not found.")
         return
 
