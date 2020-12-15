@@ -185,7 +185,7 @@ def get_statistics(working_directory, dataset_name, limit):
         # cc max
         cc_histogram_bucket_max = 11034000
         histogram_bucket_count = 1000
-        histogram_bucket_size = cc_histogram_bucket_max / 1000
+        histogram_bucket_size = cc_histogram_bucket_max / histogram_bucket_count
         frequencies = [0] * histogram_bucket_count
 
         for file in tqdm(files):
