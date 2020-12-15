@@ -244,7 +244,7 @@ def main(working_directory, process_count, n_value, allocated_ram, dataset, top_
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
-parser.add_argument("-dataset", "--dataset_name", default="CommonCrawlDataset")
+parser.add_argument("-dataset", "--dataset_name", default="CommonCrawl")
 parser.add_argument("-procs", "--process_count", type=int, default=4)
 parser.add_argument("-n", "--n_value", type=int, default=13)
 parser.add_argument("-ram", "--allocated_ram", type=int, default=80)
