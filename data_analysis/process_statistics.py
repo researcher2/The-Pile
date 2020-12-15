@@ -29,6 +29,8 @@ def main(working_directory, dataset_name, limit):
     x = list(range(0, cc_histogram_bucket_max, int(histogram_bucket_size)))
     print(x)
     print(frequencies)
+    print(len(x))
+    print(len(frequencies))
     n, bins, patches = plt.hist(x, weights=frequencies, bins=histogram_bucket_count, facecolor='blue', alpha=0.5)
     # plt.show()
     plt.savefig(os.path.join(output_directory,'frequency_hist.png'))
