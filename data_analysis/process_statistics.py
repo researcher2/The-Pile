@@ -30,7 +30,7 @@ def main(working_directory, dataset_name, limit):
     x = list(range(0, cc_histogram_bucket_max, int(histogram_bucket_size)))
     n, bins, patches = plt.hist(x, weights=frequencies, bins=histogram_bucket_count, facecolor='blue', alpha=0.5)
     # plt.show()
-    plt.savefig('plot.png')
+    plt.savefig(os.path.join(output_directory,'frequency_hist.png'))
 
 parser = argparse.ArgumentParser(description='n-gram statistics')
 parser.add_argument("-dir", "--working_directory", default="")
