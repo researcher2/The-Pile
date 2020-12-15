@@ -28,7 +28,7 @@ def main(working_directory, dataset_name, limit):
 
     # x = [21,22,23,4,5,6,77,8,9,10,31,32,33,34,35,36,37,18,49,50,100]
     bins = list(range(0, cc_histogram_bucket_max, int(histogram_bucket_size))
-    n, bins, patches = plt.hist(bins, weights=frequencies, facecolor='blue', alpha=0.5)
+    n, bins, patches = plt.hist(bins, weights=frequencies, bins=histogram_bucket_count, facecolor='blue', alpha=0.5)
     # plt.show()
     plt.savefig('plot.png')
 
