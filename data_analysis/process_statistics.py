@@ -15,7 +15,7 @@ def main(working_directory, dataset_name, limit):
 
     statistics_pickle_file = os.path.join(output_directory, f"statistics_{dataset_name}_limit{limit}.pkl")
     if not os.path.exists(statistics_pickle_file):
-        logger.info("Statistics file not found.")
+        logger.info(f"Statistics file not found: {statistics_pickle_file}")
         return
 
     overall_count, overall_unique_count, overall_ngrams_sorted, frequencies = tuple(pickle.load(open(statistics_pickle_file, "rb")))
