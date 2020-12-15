@@ -41,4 +41,6 @@ if __name__ == '__main__':
     logfile_path = "process_statistics.log"
     setup_logger_tqdm(logfile_path)
 
+    args = parser.parse_args()    
+
     main(args.working_directory, args.dataset_name, args.top_limit)
